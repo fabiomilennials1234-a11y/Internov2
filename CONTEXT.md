@@ -19,7 +19,7 @@ Uma instância de um **Evento** recorrente em uma data específica. Não é uma 
 _Avoid_: Instância, repetição.
 
 **Exceção**:
-Um desvio de uma **Ocorrência** específica de uma série: cancelada, ou com campos sobrescritos ("editar só esta"). No código: `ExcecaoEvento`, identificada por `(eventoId, dataOriginal)`.
+Um desvio de uma **Ocorrência** específica de uma série: cancelada, ou com campos sobrescritos ("editar só esta" — título/horário/local/notas; participantes e lembretes seguem a série). No código: `ExcecaoEvento`, identificada por `(eventoId, dataOriginal)`; campos `*Override` nulos herdam da série.
 _Avoid_: Override, edição pontual.
 
 **Recorrência**:

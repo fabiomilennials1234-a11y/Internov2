@@ -14,6 +14,7 @@ interface Ocorrencia {
   descricao?: string | null;
   local?: string | null;
   diaInteiro: boolean;
+  editado?: boolean;
   recorrente: boolean;
   rrule?: string | null;
   criadorId: string;
@@ -21,6 +22,13 @@ interface Ocorrencia {
   participantes: { usuario: Usuario; status?: string }[];
   lembretes: { id: string; minutosAntes: number }[];
 }
+
+const RSVP_META: Record<string, { rotulo: string; curto: string; cor: string; icone: string }> = {
+  ACEITO: { rotulo: 'Vou', curto: 'vão', cor: 'text-emerald-400', icone: '✓' },
+  RECUSADO: { rotulo: 'Não vou', curto: 'recusou', cor: 'text-red-300/80', icone: '✗' },
+  TALVEZ: { rotulo: 'Talvez', curto: 'talvez', cor: 'text-amber-300/80', icone: '?' },
+  CONVIDADO: { rotulo: 'Convidado', curto: 'sem resposta', cor: 'text-zinc-600', icone: '•' },
+};
 
 type Vista = 'mes' | 'semana' | 'dia';
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -88,8 +96,9 @@ export function Agenda() {
   const [vista, setVista] = useState<Vista>('semana');
   const [ref, setRef] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
   const [filtro, setFiltro] = useState('');
-  const [form, setForm] = useState<{ base?: Partial<Ocorrencia>; editId?: string } | null>(null);
+  const [form, setForm] = useState<{ base?: Partial<Ocorrencia>; editId?: string; override?: { dataOriginal: string } } | null>(null);
   const [detalhe, setDetalhe] = useState<Ocorrencia | null>(null);
+  const [escopo, setEscopo] = useState<Ocorrencia | null>(null); // diálogo esta-ocorrência/série
 
   // janela conforme a vista
   const { de, ate, dias } = useMemo(() => {
@@ -169,14 +178,25 @@ export function Agenda() {
 
       {form && (
         <FormEvento
-          usuarios={usuarios ?? []} clientes={clientes ?? []} base={form.base} editId={form.editId}
+          usuarios={usuarios ?? []} clientes={clientes ?? []} base={form.base} editId={form.editId} override={form.override}
           onFechar={() => setForm(null)} onSalvo={() => { setForm(null); recarregar(); }} />
       )}
       {detalhe && (
         <DetalheEvento
-          ocorrencia={detalhe} podeGerenciar={!!eu && (eu.id === detalhe.criadorId || eu.papel === 'CEO' || eu.papel === 'DIRETOR')}
+          ocorrencia={detalhe} eu={eu}
+          podeGerenciar={!!eu && (eu.id === detalhe.criadorId || eu.papel === 'CEO' || eu.papel === 'DIRETOR')}
           onFechar={() => setDetalhe(null)} onAlterado={recarregar}
-          onEditar={() => { setForm({ base: detalhe, editId: detalhe.id }); setDetalhe(null); }} />
+          onEditar={() => { if (detalhe.recorrente) { setEscopo(detalhe); } else { setForm({ base: detalhe, editId: detalhe.id }); } setDetalhe(null); }} />
+      )}
+      {escopo && (
+        <EscopoEdicao
+          onFechar={() => setEscopo(null)}
+          onEscolher={(alvo) => {
+            setForm(alvo === 'esta'
+              ? { base: escopo, editId: escopo.id, override: { dataOriginal: escopo.ocorrenciaInicio } }
+              : { base: escopo, editId: escopo.id });
+            setEscopo(null);
+          }} />
       )}
     </div>
   );
@@ -269,7 +289,7 @@ function ColunaDia({ dia, eventos, horas, onEvento, onSlot, ehHoje }: {
           <button key={e.id + e.ocorrenciaInicio} onClick={() => onEvento(e)}
             className="absolute rounded-md bg-ink-800 border-l-2 border-accent px-1.5 py-1 text-left overflow-hidden hover:bg-ink-700 transition shadow-sm"
             style={{ top: (topMin / 60) * ALTURA_HORA, height: altura, left: `calc(${p.lane * largura}% + 2px)`, width: `calc(${largura}% - 4px)` }}>
-            <div className="text-[11px] text-zinc-100 leading-tight truncate">{e.titulo}</div>
+            <div className="text-[11px] text-zinc-100 leading-tight truncate">{e.editado && <span className="text-accent-soft" title="editado">✎ </span>}{e.titulo}</div>
             <div className="text-[9.5px] text-zinc-500 truncate">{hhmm(e.inicio)}{e.cliente && ` · ${e.cliente.nome}`}</div>
           </button>
         );
@@ -300,7 +320,7 @@ function VisaoMes({ dias, mesRef, eventosDoDia, onEvento, onDia }: {
                 {evs.slice(0, 3).map((e) => (
                   <button key={e.id + e.ocorrenciaInicio} onClick={() => onEvento(e)}
                     className="block w-full text-left rounded bg-ink-800 border-l-2 border-accent px-1 py-0.5 text-[10px] text-zinc-200 truncate hover:bg-ink-700">
-                    {!e.diaInteiro && <span className="text-zinc-500">{hhmm(e.inicio)} </span>}{e.titulo}
+                    {!e.diaInteiro && <span className="text-zinc-500">{hhmm(e.inicio)} </span>}{e.editado && <span className="text-accent-soft">✎ </span>}{e.titulo}
                   </button>
                 ))}
                 {evs.length > 3 && <button onClick={() => onDia(d)} className="text-[10px] text-accent-soft px-1">+{evs.length - 3} mais</button>}
@@ -313,13 +333,49 @@ function VisaoMes({ dias, mesRef, eventosDoDia, onEvento, onDia }: {
   );
 }
 
+// ─── diálogo de escopo (editar série) ───
+function EscopoEdicao({ onFechar, onEscolher }: { onFechar: () => void; onEscolher: (alvo: 'esta' | 'serie') => void }) {
+  const [alvo, setAlvo] = useState<'esta' | 'serie'>('esta');
+  const opts: { v: 'esta' | 'serie'; t: string; d: string }[] = [
+    { v: 'esta', t: 'Esta ocorrência', d: 'Só este evento. Cria uma exceção na série.' },
+    { v: 'serie', t: 'Toda a série', d: 'Edita o evento-mãe e as ocorrências futuras.' },
+  ];
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center z-[60] p-4" onClick={onFechar}>
+      <div className="w-[360px] rounded-2xl border border-white/[0.08] bg-ink-850 p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-serif text-lg text-white">Editar evento recorrente</h2>
+        <p className="text-[12.5px] text-zinc-400 mt-1">Aplicar a alteração a:</p>
+        <div className="mt-4 space-y-2">
+          {opts.map((o) => (
+            <button key={o.v} onClick={() => setAlvo(o.v)}
+              className={`w-full text-left rounded-xl border px-4 py-3 transition ${alvo === o.v ? 'border-accent/50 bg-accent/10' : 'border-white/[0.08] bg-ink-800/60'}`}>
+              <div className="text-[13.5px] text-white">{o.t}</div>
+              <div className="text-[11.5px] text-zinc-400">{o.d}</div>
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <button onClick={onFechar} className="px-3 py-1.5 rounded-lg text-[13px] text-zinc-400 border border-white/[0.08]">Cancelar</button>
+          <button onClick={() => onEscolher(alvo)} className="px-3 py-1.5 rounded-lg text-[13px] text-white bg-accent hover:bg-accent-deep">Continuar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── detalhe do evento ───
-function DetalheEvento({ ocorrencia: e, podeGerenciar, onFechar, onAlterado, onEditar }: {
-  ocorrencia: Ocorrencia; podeGerenciar: boolean; onFechar: () => void; onAlterado: () => void; onEditar: () => void;
+function DetalheEvento({ ocorrencia: e, eu, podeGerenciar, onFechar, onAlterado, onEditar }: {
+  ocorrencia: Ocorrencia; eu: { id: string; papel: string } | null; podeGerenciar: boolean; onFechar: () => void; onAlterado: () => void; onEditar: () => void;
 }) {
   const [ocupado, setOcupado] = useState(false);
   const ehUrl = e.local && /^https?:\/\//.test(e.local);
   const recor = rotuloRecorrencia(e.rrule);
+  const souParticipante = !!eu && e.participantes.some((p) => p.usuario.id === eu.id);
+  const meuStatus = e.participantes.find((p) => p.usuario.id === eu?.id)?.status;
+
+  const contagem = ['ACEITO', 'RECUSADO', 'TALVEZ', 'CONVIDADO']
+    .map((s) => ({ s, n: e.participantes.filter((p) => (p.status ?? 'CONVIDADO') === s).length }))
+    .filter((c) => c.n > 0);
 
   async function excluir() {
     if (!confirm(e.recorrente ? 'Excluir a série inteira?' : 'Excluir este evento?')) return;
@@ -333,20 +389,53 @@ function DetalheEvento({ ocorrencia: e, podeGerenciar, onFechar, onAlterado, onE
     await api(`/agenda/eventos/${e.id}/cancelar-ocorrencia`, { method: 'POST', body: JSON.stringify({ dataOriginal: e.ocorrenciaInicio }) });
     onAlterado(); onFechar();
   }
+  async function responder(status: string) {
+    setOcupado(true);
+    await api(`/agenda/eventos/${e.id}/rsvp`, { method: 'POST', body: JSON.stringify({ status }) });
+    setOcupado(false);
+    onAlterado();
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onFechar}>
-      <div className="w-[440px] max-w-full rounded-2xl border border-white/[0.08] bg-ink-850 p-6" onClick={(ev) => ev.stopPropagation()}>
+      <div className="w-[460px] max-w-full rounded-2xl border border-white/[0.08] bg-ink-850 p-6" onClick={(ev) => ev.stopPropagation()}>
         <div className="flex items-start gap-3">
           <div className="mt-1 h-3 w-3 rounded-full bg-accent shrink-0" />
           <div className="flex-1 min-w-0">
-            <h2 className="font-serif text-xl text-white leading-tight">{e.titulo}</h2>
+            <h2 className="font-serif text-xl text-white leading-tight">{e.titulo}{e.editado && <span className="ml-2 align-middle text-[10px] uppercase tracking-wider text-accent-soft bg-accent/15 rounded px-1.5 py-0.5">editado</span>}</h2>
             <p className="text-[13px] text-zinc-400 mt-1">
               {e.diaInteiro ? 'Dia inteiro' : `${hhmm(e.inicio)} – ${hhmm(e.fim)}`} · {new Date(e.inicio).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
             </p>
             {recor && <p className="text-[12px] text-accent-soft mt-0.5">↻ {recor}</p>}
+            {contagem.length > 0 && (
+              <p className="text-[12px] text-zinc-400 mt-1.5">
+                {contagem.map((c, i) => <span key={c.s}>{i > 0 && ' · '}<span className={RSVP_META[c.s].cor}>{c.n} {RSVP_META[c.s].curto}</span></span>)}
+              </p>
+            )}
           </div>
         </div>
+
+        {souParticipante && (
+          <div className="mt-4 rounded-xl bg-ink-800/70 border border-white/[0.06] p-3">
+            <div className="text-[12px] text-zinc-400 mb-2">Você vai?</div>
+            <div className="grid grid-cols-3 gap-2">
+              {(['ACEITO', 'RECUSADO', 'TALVEZ'] as const).map((s) => {
+                const on = meuStatus === s;
+                const ativo: Record<string, string> = {
+                  ACEITO: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/40',
+                  RECUSADO: 'bg-red-500/15 text-red-300 border-red-400/40',
+                  TALVEZ: 'bg-amber-500/15 text-amber-300 border-amber-400/40',
+                };
+                return (
+                  <button key={s} disabled={ocupado} onClick={() => responder(s)}
+                    className={`rounded-lg py-1.5 text-[13px] border transition ${on ? ativo[s] : 'bg-ink-850 text-zinc-400 border-white/[0.08] hover:text-zinc-200'}`}>
+                    {RSVP_META[s].rotulo}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 space-y-2.5 text-[13px]">
           {e.local && (
@@ -360,13 +449,19 @@ function DetalheEvento({ ocorrencia: e, podeGerenciar, onFechar, onAlterado, onE
           {e.participantes.length > 0 && (
             <div className="flex gap-2 text-zinc-300">
               <span className="text-zinc-500 w-16 shrink-0">Pessoas</span>
-              <div className="flex flex-wrap gap-1">
-                {e.participantes.map((p) => (
-                  <span key={p.usuario.id} className="inline-flex items-center gap-1 text-[12px] bg-ink-800 rounded-full pl-0.5 pr-2 py-0.5">
-                    <span className="h-4 w-4 rounded-full grid place-items-center text-[8px] text-white" style={{ background: p.usuario.avatarCor ?? '#666' }}>{p.usuario.nome.slice(0, 1)}</span>
-                    {p.usuario.nome.split(' ')[0]}
-                  </span>
-                ))}
+              <div className="flex-1 space-y-1.5">
+                {e.participantes.map((p) => {
+                  const meta = RSVP_META[p.status ?? 'CONVIDADO'];
+                  return (
+                    <div key={p.usuario.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style={{ background: p.usuario.avatarCor ?? '#666' }}>{p.usuario.nome.slice(0, 1)}</span>
+                        <span className="text-[12.5px]">{p.usuario.nome.split(' ')[0]}{p.usuario.id === eu?.id && <span className="text-zinc-500 text-[11px]"> (você)</span>}</span>
+                      </div>
+                      <span className={`text-[11px] ${meta.cor}`}>{meta.icone} {meta.rotulo}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -396,9 +491,10 @@ function DetalheEvento({ ocorrencia: e, podeGerenciar, onFechar, onAlterado, onE
 }
 
 // ─── form criar/editar ───
-function FormEvento({ usuarios, clientes, base, editId, onFechar, onSalvo }: {
-  usuarios: Usuario[]; clientes: Cliente[]; base?: Partial<Ocorrencia>; editId?: string; onFechar: () => void; onSalvo: () => void;
+function FormEvento({ usuarios, clientes, base, editId, override, onFechar, onSalvo }: {
+  usuarios: Usuario[]; clientes: Cliente[]; base?: Partial<Ocorrencia>; editId?: string; override?: { dataOriginal: string }; onFechar: () => void; onSalvo: () => void;
 }) {
+  const soOcorrencia = !!override; // editando só esta ocorrência: sem recorrência/cliente/participantes/lembrete
   const baseIni = base?.inicio ? new Date(base.inicio) : (() => { const d = new Date(); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d; })();
   const baseFim = base?.fim ? new Date(base.fim) : new Date(baseIni.getTime() + 60 * 60_000);
   const rr = lerRRule(base?.rrule);
@@ -423,6 +519,21 @@ function FormEvento({ usuarios, clientes, base, editId, onFechar, onSalvo }: {
     setOcupado(true);
     const inicio = diaInteiro ? new Date(`${data}T00:00`) : new Date(`${data}T${hIni}`);
     const fim = diaInteiro ? new Date(`${data}T23:59`) : new Date(`${data}T${hFim}`);
+
+    if (override) {
+      // editar só esta ocorrência → grava override (ExcecaoEvento)
+      await api(`/agenda/eventos/${editId}/editar-ocorrencia`, {
+        method: 'POST',
+        body: JSON.stringify({
+          dataOriginal: override.dataOriginal,
+          titulo, descricao: descricao || undefined, local: local || undefined,
+          inicio: inicio.toISOString(), fim: fim.toISOString(), diaInteiro,
+        }),
+      });
+      onSalvo();
+      return;
+    }
+
     const corpo = {
       titulo, descricao: descricao || undefined, local: local || undefined,
       inicio: inicio.toISOString(), fim: fim.toISOString(), diaInteiro,
@@ -439,7 +550,8 @@ function FormEvento({ usuarios, clientes, base, editId, onFechar, onSalvo }: {
   return (
     <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4 overflow-y-auto" onClick={onFechar}>
       <div className="w-[460px] max-w-full rounded-2xl border border-white/[0.08] bg-ink-850 p-6 my-8" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-xl text-white mb-4">{editId ? 'Editar evento' : 'Novo evento'}</h2>
+        <h2 className="font-serif text-xl text-white mb-4">{soOcorrencia ? 'Editar esta ocorrência' : editId ? 'Editar evento' : 'Novo evento'}</h2>
+        {soOcorrencia && <p className="text-[12px] text-zinc-500 -mt-2 mb-4">Altera só este dia. A série continua igual.</p>}
         <input autoFocus value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título"
           className="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[14px] mb-3 outline-none focus:border-accent/50" />
 
@@ -454,7 +566,8 @@ function FormEvento({ usuarios, clientes, base, editId, onFechar, onSalvo }: {
           </>}
         </div>
 
-        {/* recorrência */}
+        {/* recorrência — oculta ao editar só uma ocorrência */}
+        {!soOcorrencia && <>
         <div className="flex gap-2 mb-2 items-center">
           <span className="text-[11px] uppercase tracking-wider text-zinc-500 w-20">Repete</span>
           <select value={freq} onChange={(e) => setFreq(e.target.value)} className="flex-1 bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[13px]">
@@ -480,11 +593,13 @@ function FormEvento({ usuarios, clientes, base, editId, onFechar, onSalvo }: {
             <span className="text-[11px] text-zinc-600">(vazio = sem fim)</span>
           </div>
         )}
+        </>}
 
         <input value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Local ou link da reunião"
           className="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px] mb-3 outline-none" />
         <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Notas" rows={2}
           className="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px] mb-3 outline-none resize-none" />
+        {!soOcorrencia && <>
         <select value={clienteId} onChange={(e) => setClienteId(e.target.value)} className="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px] mb-3">
           <option value="">Sem cliente vinculado</option>
           {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -507,6 +622,7 @@ function FormEvento({ usuarios, clientes, base, editId, onFechar, onSalvo }: {
               className={`text-[11px] px-2 py-0.5 rounded-full border ${on ? 'bg-accent/20 text-accent-soft border-accent/40' : 'border-white/[0.08] text-zinc-500'}`}>{u.nome}</button>;
           })}
         </div>
+        </>}
 
         <div className="flex justify-end gap-2">
           <button onClick={onFechar} className="px-3 py-1.5 rounded-lg text-[13px] text-zinc-400 border border-white/[0.08]">Cancelar</button>

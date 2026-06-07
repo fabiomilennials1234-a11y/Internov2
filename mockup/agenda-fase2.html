@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agenda fase 2 · mockup (RSVP + editar-só-esta)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:{950:'#08080a',900:'#0b0b0e',850:'#0f0f13',800:'#141418',700:'#1b1b21'}, accent:{DEFAULT:'#7c6cf6',soft:'#a99cfb',deep:'#5b4dd6'} },
+    fontFamily: { sans:['Inter','system-ui'], serif:['Newsreader','Georgia'] } } } };
+</script>
+<style>
+  body { background:#08080a; color:#e4e4e7; font-family:Inter,system-ui; }
+  ::selection { background: rgba(124,108,246,.35); }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-[900px] mx-auto px-8 py-10">
+  <h1 class="font-serif text-[26px] text-white">Agenda · fase 2 — mockup de validação</h1>
+  <p class="text-[13px] text-zinc-400 mt-1.5">Duas interações novas: <b class="text-zinc-200">RSVP</b> no detalhe e <b class="text-zinc-200">editar só esta ocorrência</b>. Clique pra abrir.</p>
+
+  <div class="flex gap-3 mt-6">
+    <button onclick="abrir('detalhe')" class="bg-accent hover:bg-accent-deep text-white rounded-lg px-4 py-2 text-[13px]">Abrir detalhe (RSVP)</button>
+    <button onclick="abrir('escopo')" class="bg-ink-800 border border-white/[0.08] text-zinc-200 rounded-lg px-4 py-2 text-[13px]">Abrir diálogo de escopo (editar série)</button>
+  </div>
+
+  <!-- legenda das mudanças -->
+  <div class="mt-8 grid grid-cols-2 gap-4 text-[12.5px]">
+    <div class="rounded-xl border border-white/[0.07] bg-ink-850/60 p-4">
+      <div class="text-zinc-200 font-medium mb-1.5">RSVP no detalhe</div>
+      <ul class="text-zinc-400 space-y-1 list-disc pl-4">
+        <li>Linha "Você vai?": Vou / Não vou / Talvez</li>
+        <li>Contagem no topo: "3 vão · 1 recusou · 1 talvez"</li>
+        <li>Badge de status por participante</li>
+        <li>Resposta notifica o criador</li>
+      </ul>
+    </div>
+    <div class="rounded-xl border border-white/[0.07] bg-ink-850/60 p-4">
+      <div class="text-zinc-200 font-medium mb-1.5">Editar só esta ocorrência</div>
+      <ul class="text-zinc-400 space-y-1 list-disc pl-4">
+        <li>Ao editar série, pergunta escopo</li>
+        <li>"Esta ocorrência" → grava override (ExcecaoEvento)</li>
+        <li>"Toda a série" → edita o evento-mãe</li>
+        <li>Ocorrência editada ganha selo "editado"</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- modal detalhe com RSVP -->
+<div id="detalhe" class="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4 hidden" onclick="fechar('detalhe')">
+  <div class="w-[460px] max-w-full rounded-2xl border border-white/[0.08] bg-ink-850 p-6" onclick="event.stopPropagation()">
+    <div class="flex items-start gap-3">
+      <div class="mt-1 h-3 w-3 rounded-full bg-accent shrink-0"></div>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-serif text-xl text-white leading-tight">Reunião semanal · Acme</h2>
+        <p class="text-[13px] text-zinc-400 mt-1">10:00 – 11:00 · segunda-feira, 09 de junho</p>
+        <p class="text-[12px] text-accent-soft mt-0.5">↻ Toda semana</p>
+        <p class="text-[12px] text-zinc-400 mt-1.5"><span class="text-emerald-400">3 vão</span> · <span class="text-red-300/80">1 recusou</span> · <span class="text-amber-300/80">1 talvez</span> · 2 sem resposta</p>
+      </div>
+    </div>
+
+    <!-- você vai? -->
+    <div class="mt-4 rounded-xl bg-ink-800/70 border border-white/[0.06] p-3">
+      <div class="text-[12px] text-zinc-400 mb-2">Você vai?</div>
+      <div class="grid grid-cols-3 gap-2" id="rsvp">
+        <button data-s="ACEITO" class="rsvp-btn rounded-lg py-1.5 text-[13px] bg-emerald-500/15 text-emerald-300 border border-emerald-400/40">Vou</button>
+        <button data-s="RECUSADO" class="rsvp-btn rounded-lg py-1.5 text-[13px] bg-ink-850 text-zinc-400 border border-white/[0.08]">Não vou</button>
+        <button data-s="TALVEZ" class="rsvp-btn rounded-lg py-1.5 text-[13px] bg-ink-850 text-zinc-400 border border-white/[0.08]">Talvez</button>
+      </div>
+    </div>
+
+    <div class="mt-4 space-y-2.5 text-[13px]">
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Local</span><a class="text-accent-soft hover:underline">Entrar na reunião</a></div>
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Cliente</span><span>Acme Corp</span></div>
+      <div class="flex gap-2 text-zinc-300">
+        <span class="text-zinc-500 w-16 shrink-0">Pessoas</span>
+        <div class="flex-1 space-y-1.5">
+          <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style="background:#7c6cf6">G</span>Gabriel <span class="text-zinc-500 text-[11px]">(você)</span></div><span class="text-[11px] text-emerald-400">✓ Vou</span></div>
+          <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style="background:#e0719c">M</span>Marina</div><span class="text-[11px] text-emerald-400">✓ Vou</span></div>
+          <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style="background:#5bb0e0">R</span>Rafael</div><span class="text-[11px] text-emerald-400">✓ Vou</span></div>
+          <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style="background:#e0a35b">C</span>Camila</div><span class="text-[11px] text-red-300/80">✗ Não vai</span></div>
+          <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style="background:#7be0a3">L</span>Lucas</div><span class="text-[11px] text-amber-300/80">? Talvez</span></div>
+          <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="h-5 w-5 rounded-full grid place-items-center text-[9px] text-white" style="background:#9b8cff">P</span>Paula</div><span class="text-[11px] text-zinc-600">• Sem resposta</span></div>
+        </div>
+      </div>
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Lembrete</span><span>10 min · 1 dia</span></div>
+    </div>
+
+    <div class="flex justify-between items-center gap-2 mt-6">
+      <button class="text-[12.5px] text-zinc-400 hover:text-zinc-200">Cancelar esta ocorrência</button>
+      <div class="flex gap-2">
+        <button class="px-3 py-1.5 rounded-lg text-[13px] text-red-300/80 border border-red-400/20 hover:bg-red-500/10">Excluir</button>
+        <button onclick="fechar('detalhe');abrir('escopo')" class="px-3 py-1.5 rounded-lg text-[13px] text-white bg-accent hover:bg-accent-deep">Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- diálogo de escopo -->
+<div id="escopo" class="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4 hidden" onclick="fechar('escopo')">
+  <div class="w-[360px] rounded-2xl border border-white/[0.08] bg-ink-850 p-6" onclick="event.stopPropagation()">
+    <h2 class="font-serif text-lg text-white">Editar evento recorrente</h2>
+    <p class="text-[12.5px] text-zinc-400 mt-1">Aplicar a alteração a:</p>
+    <div class="mt-4 space-y-2" id="escopoOpts">
+      <button data-e="esta" class="esc-opt w-full text-left rounded-xl border border-accent/50 bg-accent/10 px-4 py-3">
+        <div class="text-[13.5px] text-white">Esta ocorrência</div>
+        <div class="text-[11.5px] text-zinc-400">Só o evento de 09/jun. Cria uma exceção na série.</div>
+      </button>
+      <button data-e="serie" class="esc-opt w-full text-left rounded-xl border border-white/[0.08] bg-ink-800/60 px-4 py-3">
+        <div class="text-[13.5px] text-white">Toda a série</div>
+        <div class="text-[11.5px] text-zinc-400">Edita o evento-mãe e todas as ocorrências futuras.</div>
+      </button>
+    </div>
+    <div class="flex justify-end gap-2 mt-5">
+      <button onclick="fechar('escopo')" class="px-3 py-1.5 rounded-lg text-[13px] text-zinc-400 border border-white/[0.08]">Cancelar</button>
+      <button onclick="fechar('escopo')" class="px-3 py-1.5 rounded-lg text-[13px] text-white bg-accent hover:bg-accent-deep">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function abrir(id){ document.getElementById(id).classList.remove('hidden'); }
+  function fechar(id){ document.getElementById(id).classList.add('hidden'); }
+
+  // RSVP toggle
+  document.getElementById('rsvp').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#rsvp .rsvp-btn').forEach(x=>x.className='rsvp-btn rounded-lg py-1.5 text-[13px] bg-ink-850 text-zinc-400 border border-white/[0.08]');
+    const map={ACEITO:'bg-emerald-500/15 text-emerald-300 border-emerald-400/40',RECUSADO:'bg-red-500/15 text-red-300 border-red-400/40',TALVEZ:'bg-amber-500/15 text-amber-300 border-amber-400/40'};
+    b.className='rsvp-btn rounded-lg py-1.5 text-[13px] border '+map[b.dataset.s];
+  });
+  // escopo toggle
+  document.getElementById('escopoOpts').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('.esc-opt').forEach(x=>{ x.classList.remove('border-accent/50','bg-accent/10'); x.classList.add('border-white/[0.08]','bg-ink-800/60'); });
+    b.classList.remove('border-white/[0.08]','bg-ink-800/60'); b.classList.add('border-accent/50','bg-accent/10');
+  });
+</script>
+</body>
+</html>

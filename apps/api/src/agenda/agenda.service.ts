@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
-import { EVENTOS, type EventoCriadoEvento } from '@interno/shared';
+import { EVENTOS, StatusParticipante, type EventoCriadoEvento, type RsvpRespondidoEvento } from '@interno/shared';
 import { PrismaService } from '../prisma';
 import { expandirOcorrencias, type DefinicaoEvento } from './recorrencia';
 import { calcularDispararEm } from './lembrete';
@@ -49,7 +49,7 @@ export class AgendaService {
       include: {
         cliente: { select: { id: true, nome: true } },
         participantes: { include: { usuario: { select: { id: true, nome: true, avatarCor: true } } } },
-        excecoes: { where: { cancelado: true }, select: { dataOriginal: true } },
+        excecoes: true,
         lembretes: { select: { id: true, minutosAntes: true } },
       },
     });
@@ -60,24 +60,36 @@ export class AgendaService {
         fim: e.fim,
         rrule: e.rrule,
         recorrenciaFim: e.recorrenciaFim,
-        excecoesCanceladas: e.excecoes.map((x) => x.dataOriginal),
+        excecoes: e.excecoes.map((x) => ({
+          dataOriginal: x.dataOriginal,
+          cancelado: x.cancelado,
+          inicioOverride: x.inicioOverride,
+          fimOverride: x.fimOverride,
+        })),
       };
-      return expandirOcorrencias(def, { de, ate }).map((oc) => ({
-        id: e.id,
-        ocorrenciaInicio: oc.inicio,
-        inicio: oc.inicio,
-        fim: oc.fim,
-        titulo: e.titulo,
-        descricao: e.descricao,
-        local: e.local,
-        diaInteiro: e.diaInteiro,
-        recorrente: e.rrule != null,
-        rrule: e.rrule,
-        criadorId: e.criadorId,
-        cliente: e.cliente,
-        participantes: e.participantes,
-        lembretes: e.lembretes,
-      }));
+      // override de conteúdo (título/local/notas/dia-inteiro) por dataOriginal — o expansor só trata tempo.
+      const overridePorData = new Map(e.excecoes.filter((x) => !x.cancelado).map((x) => [x.dataOriginal.getTime(), x]));
+
+      return expandirOcorrencias(def, { de, ate }).map((oc) => {
+        const ov = overridePorData.get(oc.dataOriginal.getTime());
+        return {
+          id: e.id,
+          ocorrenciaInicio: oc.dataOriginal, // chave estável da ocorrência (antes de override de horário)
+          inicio: oc.inicio,
+          fim: oc.fim,
+          titulo: ov?.tituloOverride ?? e.titulo,
+          descricao: ov?.descricaoOverride ?? e.descricao,
+          local: ov?.localOverride ?? e.local,
+          diaInteiro: ov?.diaInteiroOverride ?? e.diaInteiro,
+          editado: ov != null,
+          recorrente: e.rrule != null,
+          rrule: e.rrule,
+          criadorId: e.criadorId,
+          cliente: e.cliente,
+          participantes: e.participantes,
+          lembretes: e.lembretes,
+        };
+      });
     });
 
     itens.sort((a, b) => a.inicio.getTime() - b.inicio.getTime());
@@ -159,6 +171,52 @@ export class AgendaService {
       update: { cancelado: true },
     });
     return { ok: true };
+  }
+
+  // Edita UMA ocorrência de série recorrente (override de conteúdo/horário), sem afetar o resto.
+  async editarOcorrencia(
+    id: string,
+    usuario: { id: string; papel: string },
+    dataOriginal: Date,
+    override: { titulo?: string; descricao?: string | null; local?: string | null; inicio?: Date; fim?: Date; diaInteiro?: boolean },
+  ) {
+    const atual = await this.prisma.eventoAgenda.findUnique({ where: { id } });
+    if (!atual) throw new NotFoundException('Evento não encontrado');
+    if (!podeGerenciarEvento(usuario, atual)) throw new ForbiddenException('Sem permissão');
+
+    const dados = {
+      cancelado: false,
+      tituloOverride: override.titulo ?? null,
+      descricaoOverride: override.descricao ?? null,
+      localOverride: override.local ?? null,
+      inicioOverride: override.inicio ?? null,
+      fimOverride: override.fim ?? null,
+      diaInteiroOverride: override.diaInteiro ?? null,
+    };
+    await this.prisma.excecaoEvento.upsert({
+      where: { eventoId_dataOriginal: { eventoId: id, dataOriginal } },
+      create: { eventoId: id, dataOriginal, ...dados },
+      update: dados,
+    });
+    return { ok: true };
+  }
+
+  // RSVP (fase 2): participante responde ao convite. Status vale para a série inteira.
+  async responder(eventoId: string, usuarioId: string, status: StatusParticipante) {
+    const participante = await this.prisma.participanteEvento.update({
+      where: { eventoId_usuarioId: { eventoId, usuarioId } },
+      data: { status },
+      include: { evento: { select: { titulo: true, criadorId: true } } },
+    });
+    const payload: RsvpRespondidoEvento = {
+      eventoId,
+      titulo: participante.evento.titulo,
+      criadorId: participante.evento.criadorId,
+      participanteId: usuarioId,
+      status,
+    };
+    this.eventos.emit(EVENTOS.RSVP_RESPONDIDO, payload);
+    return { status };
   }
 
   // ─── Lembretes de evento ÚNICO: jobs delayed precisos. Recorrentes ficam com o sweeper. ───

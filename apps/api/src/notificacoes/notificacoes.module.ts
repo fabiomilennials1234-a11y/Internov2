@@ -5,6 +5,8 @@ import {
   MencaoCriadaEvento,
   TarefaAtribuidaEvento,
   LembreteDisparadoEvento,
+  RsvpRespondidoEvento,
+  StatusParticipante,
   TipoMencao,
 } from '@interno/shared';
 import { PrismaService } from '../prisma';
@@ -56,6 +58,14 @@ export class NotificacoesService {
         }),
       ),
     );
+  }
+
+  // RSVP: avisa o criador quando alguém responde (exceto a própria resposta dele).
+  @OnEvent(EVENTOS.RSVP_RESPONDIDO)
+  aoResponderRsvp(e: RsvpRespondidoEvento) {
+    if (e.participanteId === e.criadorId) return;
+    if (e.status === StatusParticipante.CONVIDADO) return;
+    return this.notificar(e.criadorId, 'rsvp', { eventoId: e.eventoId, titulo: e.titulo, participanteId: e.participanteId, status: e.status });
   }
 }
 

@@ -303,13 +303,21 @@ model ParticipanteEvento {
   @@id([eventoId, usuarioId])
 }
 
-// Desvio de uma ocorrência específica de série recorrente: cancelada ou (fase 2) com campos sobrescritos.
+// Desvio de uma ocorrência específica de série recorrente: cancelada OU com campos sobrescritos
+// ("editar só esta"). Campos *Override nulos = herda da série. Participantes/lembretes seguem a série.
 model ExcecaoEvento {
   id           String       @id @default(cuid())
   eventoId     String
   evento       EventoAgenda @relation(fields: [eventoId], references: [id], onDelete: Cascade)
   dataOriginal DateTime // o início da ocorrência na série antes do desvio
-  cancelado    Boolean  @default(true)
+  cancelado    Boolean  @default(false)
+
+  tituloOverride     String?
+  inicioOverride     DateTime?
+  fimOverride        DateTime?
+  localOverride      String?
+  descricaoOverride  String?
+  diaInteiroOverride Boolean?
 
   @@unique([eventoId, dataOriginal])
 }

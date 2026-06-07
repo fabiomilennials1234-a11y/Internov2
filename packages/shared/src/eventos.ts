@@ -3,7 +3,7 @@
 // contratos + a facade pública — nunca repositórios/entities internos.
 // (Galego: comunicação intra-monolito é chamada de função, não rede.)
 
-import { TipoMencao, EstagioEntrega, TipoAtividade } from './dominio';
+import { TipoMencao, EstagioEntrega, TipoAtividade, StatusParticipante } from './dominio';
 
 export const EVENTOS = {
   USUARIO_CRIADO: 'pessoas.usuario.criado',
@@ -16,6 +16,7 @@ export const EVENTOS = {
   PROJETO_VINCULADO_CLIENTE: 'projetos.projeto.vinculadoCliente',
   EVENTO_CRIADO: 'agenda.evento.criado',
   LEMBRETE_DISPARADO: 'agenda.lembrete.disparado',
+  RSVP_RESPONDIDO: 'agenda.rsvp.respondido',
   KPI_ATUALIZADO: 'indicadores.kpi.atualizado',
 } as const;
 
@@ -73,6 +74,15 @@ export interface LembreteDisparadoEvento {
   titulo: string;
   ocorrenciaInicio: string; // ISO
   participantesIds: string[];
+}
+
+// Participante respondeu ao convite (RSVP): notifica o criador do evento.
+export interface RsvpRespondidoEvento {
+  eventoId: string;
+  titulo: string;
+  criadorId: string;
+  participanteId: string;
+  status: StatusParticipante;
 }
 
 // Item normalizado do feed de atividades (alimenta card do cliente E visão por pessoa).

@@ -55,7 +55,7 @@ export class AgendaProcessor extends WorkerHost {
       where: { rrule: { not: null }, lembretes: { some: {} } },
       include: {
         lembretes: { select: { id: true, minutosAntes: true } },
-        excecoes: { where: { cancelado: true }, select: { dataOriginal: true } },
+        excecoes: { select: { dataOriginal: true, cancelado: true, inicioOverride: true, fimOverride: true } },
       },
     });
 
@@ -65,7 +65,12 @@ export class AgendaProcessor extends WorkerHost {
       fim: e.fim,
       rrule: e.rrule,
       recorrenciaFim: e.recorrenciaFim,
-      excecoesCanceladas: e.excecoes.map((x) => x.dataOriginal),
+      excecoes: e.excecoes.map((x) => ({
+        dataOriginal: x.dataOriginal,
+        cancelado: x.cancelado,
+        inicioOverride: x.inicioOverride,
+        fimOverride: x.fimOverride,
+      })),
       lembretes: e.lembretes,
     }));
 

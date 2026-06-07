@@ -1,5 +1,14 @@
 import { RRule } from 'rrule';
 
+/** Desvio de uma ocorrência: cancelamento ou override de horário. Override de conteúdo
+ * (título/local/notas) é aplicado pelo serviço por dataOriginal — aqui só o tempo importa. */
+export interface ExcecaoOcorrencia {
+  dataOriginal: Date;
+  cancelado: boolean;
+  inicioOverride?: Date | null;
+  fimOverride?: Date | null;
+}
+
 export interface DefinicaoEvento {
   inicio: Date;
   fim: Date;
@@ -7,13 +16,14 @@ export interface DefinicaoEvento {
   rrule?: string | null;
   /** Limite da série (UNTIL). Aplicado por cima do RRULE. */
   recorrenciaFim?: Date | null;
-  /** Inícios de ocorrências canceladas via ExcecaoEvento (dataOriginal). */
-  excecoesCanceladas?: Date[];
+  excecoes?: ExcecaoOcorrencia[];
 }
 
 export interface Ocorrencia {
   inicio: Date;
   fim: Date;
+  /** Início da ocorrência na série antes de qualquer override — chave de exceção/cancelamento. */
+  dataOriginal: Date;
 }
 
 export interface Janela {
@@ -31,7 +41,7 @@ export function expandirOcorrencias(evento: DefinicaoEvento, janela: Janela): Oc
   // Evento único: incluso se inicia dentro da janela.
   if (!evento.rrule) {
     if (evento.inicio >= janela.de && evento.inicio < janela.ate) {
-      return [{ inicio: evento.inicio, fim: evento.fim }];
+      return [{ inicio: evento.inicio, fim: evento.fim, dataOriginal: evento.inicio }];
     }
     return [];
   }
@@ -41,12 +51,21 @@ export function expandirOcorrencias(evento: DefinicaoEvento, janela: Janela): Oc
   if (evento.recorrenciaFim) opcoes.until = evento.recorrenciaFim;
   const regra = new RRule(opcoes);
 
-  const cancelados = new Set((evento.excecoesCanceladas ?? []).map((d) => d.getTime()));
+  const porData = new Map((evento.excecoes ?? []).map((e) => [e.dataOriginal.getTime(), e]));
 
-  // between() é exclusivo no fim; usamos inc=true no início e filtramos < ate.
-  return regra
-    .between(janela.de, janela.ate, true)
-    .filter((inicio) => inicio >= janela.de && inicio < janela.ate)
-    .filter((inicio) => !cancelados.has(inicio.getTime()))
-    .map((inicio) => ({ inicio, fim: new Date(inicio.getTime() + duracaoMs) }));
+  const ocorrencias: Ocorrencia[] = [];
+  for (const slot of regra.between(janela.de, janela.ate, true)) {
+    if (slot < janela.de || slot >= janela.ate) continue;
+    const excecao = porData.get(slot.getTime());
+    if (excecao?.cancelado) continue;
+
+    if (excecao?.inicioOverride) {
+      const inicio = excecao.inicioOverride;
+      const fim = excecao.fimOverride ?? new Date(inicio.getTime() + duracaoMs);
+      ocorrencias.push({ inicio, fim, dataOriginal: slot });
+    } else {
+      ocorrencias.push({ inicio: slot, fim: new Date(slot.getTime() + duracaoMs), dataOriginal: slot });
+    }
+  }
+  return ocorrencias;
 }

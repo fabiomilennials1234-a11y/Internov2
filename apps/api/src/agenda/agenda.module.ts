@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Module, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
-import { IsArray, IsBoolean, IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { StatusParticipante } from '@interno/shared';
 import { AgendaService, EntradaEvento, FILA_AGENDA } from './agenda.service';
 import { AgendaProcessor, AgendaScheduler } from './agenda.processor';
 import { JwtAuthGuard, UsuarioAtual } from '../auth';
@@ -22,6 +23,20 @@ class EventoDto {
 
 class CancelarOcorrenciaDto {
   @IsDateString() dataOriginal!: string;
+}
+
+class EditarOcorrenciaDto {
+  @IsDateString() dataOriginal!: string;
+  @IsOptional() @IsString() titulo?: string;
+  @IsOptional() @IsString() descricao?: string;
+  @IsOptional() @IsString() local?: string;
+  @IsOptional() @IsDateString() inicio?: string;
+  @IsOptional() @IsDateString() fim?: string;
+  @IsOptional() @IsBoolean() diaInteiro?: boolean;
+}
+
+class RsvpDto {
+  @IsIn(['CONVIDADO', 'ACEITO', 'RECUSADO', 'TALVEZ']) status!: StatusParticipante;
 }
 
 function paraEntrada(dto: EventoDto): EntradaEvento {
@@ -70,6 +85,25 @@ class AgendaController {
   @Post('eventos/:id/cancelar-ocorrencia')
   cancelarOcorrencia(@Param('id') id: string, @Body() dto: CancelarOcorrenciaDto, @UsuarioAtual() u: UsuarioAutenticado) {
     return this.agenda.cancelarOcorrencia(id, u, new Date(dto.dataOriginal));
+  }
+
+  // Edita só esta ocorrência (override). "Toda a série" usa o PATCH normal.
+  @Post('eventos/:id/editar-ocorrencia')
+  editarOcorrencia(@Param('id') id: string, @Body() dto: EditarOcorrenciaDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.agenda.editarOcorrencia(id, u, new Date(dto.dataOriginal), {
+      titulo: dto.titulo,
+      descricao: dto.descricao,
+      local: dto.local,
+      inicio: dto.inicio ? new Date(dto.inicio) : undefined,
+      fim: dto.fim ? new Date(dto.fim) : undefined,
+      diaInteiro: dto.diaInteiro,
+    });
+  }
+
+  // RSVP: o usuário atual responde ao convite.
+  @Post('eventos/:id/rsvp')
+  rsvp(@Param('id') id: string, @Body() dto: RsvpDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.agenda.responder(id, u.id, dto.status);
   }
 }
 

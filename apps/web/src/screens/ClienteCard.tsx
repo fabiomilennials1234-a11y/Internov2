@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 
@@ -15,13 +16,27 @@ interface Atividade {
   tipo: string;
   resumo: string;
   criadoEm: string;
+  mensagemId?: string;
+  payload?: { canalId?: string };
   ator?: { nome: string; avatarCor?: string };
 }
 
+const ESTAGIOS = ['ONBOARDING', 'EM_EXECUCAO', 'EM_REVISAO', 'SAUDAVEL', 'EM_RISCO'];
+const rotulo: Record<string, string> = {
+  ONBOARDING: 'Onboarding', EM_EXECUCAO: 'Em execução', EM_REVISAO: 'Em revisão', SAUDAVEL: 'Saudável', EM_RISCO: 'Em risco',
+};
+
 export function ClienteCard() {
   const { id } = useParams();
+  const qc = useQueryClient();
   const { data: card } = useQuery({ queryKey: ['cliente', id], queryFn: () => api<Card>(`/clientes/${id}`) });
   const { data: feed } = useQuery({ queryKey: ['cliente-feed', id], queryFn: () => api<Atividade[]>(`/atividades/cliente/${id}`) });
+
+  async function mudarEstagio(estagio: string) {
+    await api(`/clientes/${id}/estagio`, { method: 'PATCH', body: JSON.stringify({ estagio }) });
+    qc.invalidateQueries({ queryKey: ['cliente', id] });
+    qc.invalidateQueries({ queryKey: ['cliente-feed', id] });
+  }
 
   if (!card) return <div className="p-8 text-zinc-500">Carregando…</div>;
 
@@ -30,10 +45,14 @@ export function ClienteCard() {
       <Link to="/clientes" className="text-[12px] text-zinc-500 hover:text-zinc-300">← Clientes</Link>
       <div className="flex items-center gap-4 mt-4">
         <div className="h-14 w-14 rounded-2xl bg-white/[0.05] grid place-items-center text-2xl">{card.emoji ?? '🏢'}</div>
-        <div>
+        <div className="flex-1">
           <h1 className="font-serif text-[28px] text-white leading-none">{card.nome}</h1>
-          <div className="text-[13px] text-zinc-400 mt-1.5">Resp. {card.responsavel?.nome ?? '—'} · {card.estagioEntrega.replace('_', ' ').toLowerCase()}</div>
+          <div className="text-[13px] text-zinc-400 mt-1.5">Resp. {card.responsavel?.nome ?? '—'}</div>
         </div>
+        <select value={card.estagioEntrega} onChange={(e) => mudarEstagio(e.target.value)}
+          className="bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[13px] text-accent-soft">
+          {ESTAGIOS.map((s) => <option key={s} value={s}>{rotulo[s]}</option>)}
+        </select>
       </div>
 
       <div className="grid grid-cols-12 gap-5 mt-7">
@@ -51,21 +70,50 @@ export function ClienteCard() {
         <div className="col-span-12 lg:col-span-8">
           <div className="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">Timeline · atividades & menções</div>
           <div className="space-y-2.5">
-            {(feed ?? []).map((a) => (
-              <div key={a.id} className="flex gap-3 rounded-xl border border-white/[0.07] bg-ink-850/55 px-4 py-3">
-                <span className="h-6 w-6 rounded-full grid place-items-center text-[10px] text-white shrink-0" style={{ background: a.ator?.avatarCor ?? '#666' }}>
-                  {a.ator?.nome?.slice(0, 2).toUpperCase() ?? '••'}
-                </span>
-                <div>
-                  <div className="text-[13px] text-zinc-200">{a.resumo}</div>
-                  <div className="text-[11px] text-zinc-600">{a.tipo} · {new Date(a.criadoEm).toLocaleString('pt-BR')}</div>
-                </div>
-              </div>
-            ))}
+            {(feed ?? []).map((a) => <ItemFeed key={a.id} a={a} onResposta={() => qc.invalidateQueries({ queryKey: ['cliente-feed', id] })} />)}
             {(!feed || feed.length === 0) && <div className="text-[13px] text-zinc-600">Sem atividade ainda. Menções a este cliente no chat aparecem aqui.</div>}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ItemFeed({ a, onResposta }: { a: Atividade; onResposta: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const [texto, setTexto] = useState('');
+  const podeResponder = a.tipo === 'MENCAO' && a.payload?.canalId && a.mensagemId;
+
+  async function responder() {
+    if (!texto.trim() || !a.payload?.canalId) return;
+    await api(`/comunicacao/canais/${a.payload.canalId}/mensagens`, {
+      method: 'POST',
+      body: JSON.stringify({ conteudo: texto, threadPaiId: a.mensagemId }),
+    });
+    setTexto('');
+    setAberto(false);
+    onResposta();
+  }
+
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-ink-850/55 px-4 py-3">
+      <div className="flex gap-3">
+        <span className="h-6 w-6 rounded-full grid place-items-center text-[10px] text-white shrink-0" style={{ background: a.ator?.avatarCor ?? '#666' }}>
+          {a.ator?.nome?.slice(0, 2).toUpperCase() ?? '••'}
+        </span>
+        <div className="flex-1">
+          <div className="text-[13px] text-zinc-200">{a.resumo}</div>
+          <div className="text-[11px] text-zinc-600">{a.tipo} · {new Date(a.criadoEm).toLocaleString('pt-BR')}</div>
+        </div>
+        {podeResponder && <button onClick={() => setAberto((v) => !v)} className="text-[11px] text-accent-soft self-start">↩ Responder</button>}
+      </div>
+      {aberto && (
+        <div className="flex gap-2 mt-2 pl-9">
+          <input value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && responder()}
+            placeholder="Responder no canal de origem…" className="flex-1 bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[12px] outline-none" />
+          <button onClick={responder} className="bg-accent hover:bg-accent-deep text-white rounded-lg px-3 text-[12px]">Enviar</button>
+        </div>
+      )}
     </div>
   );
 }

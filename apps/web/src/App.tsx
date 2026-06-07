@@ -8,7 +8,9 @@ import { ClienteCard } from '@/screens/ClienteCard';
 import { Pessoas } from '@/screens/Pessoas';
 import { Kanban } from '@/screens/Kanban';
 import { Comunicacao } from '@/screens/Comunicacao';
-import { EmBreve } from '@/screens/EmBreve';
+import { Agenda } from '@/screens/Agenda';
+import { Indicadores } from '@/screens/Indicadores';
+import { TV } from '@/screens/TV';
 
 function Protegido() {
   const token = useAuth((s) => s.accessToken);
@@ -32,9 +34,9 @@ export const router = createBrowserRouter([
       { path: 'pessoas', element: <Pessoas /> },
       { path: 'kanban/:donoId?', element: <Kanban /> },
       { path: 'comunicacao', element: <Comunicacao /> },
-      { path: 'agenda', element: <EmBreve titulo="Agenda" /> },
-      { path: 'indicadores', element: <EmBreve titulo="Indicadores" /> },
-      { path: 'tv', element: <EmBreve titulo="TV-Dashboard" /> },
+      { path: 'agenda', element: <Agenda /> },
+      { path: 'indicadores', element: <Indicadores /> },
+      { path: 'tv', element: <TV /> },
     ],
   },
 ]);

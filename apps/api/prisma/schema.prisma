@@ -1,0 +1,439 @@
+// Sistema Interno MilennialsTECH — monolito modular.
+// Um banco. Modelos agrupados por módulo de domínio (comentários // [modulo]).
+// Enums espelham packages/shared/src/dominio.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // pooler (6543) em runtime
+  directUrl = env("DIRECT_URL")     // direto (5432) p/ migrations
+}
+
+// ───────────────────────── enums ─────────────────────────
+enum Papel {
+  CEO
+  DIRETOR
+  GESTOR
+  FUNCIONARIO
+}
+
+enum EstagioEntrega {
+  ONBOARDING
+  EM_EXECUCAO
+  EM_REVISAO
+  SAUDAVEL
+  EM_RISCO
+}
+
+enum SaudeCliente {
+  BOA
+  ATENCAO
+  RISCO
+}
+
+enum TipoProjeto {
+  CLIENTE
+  INTERNO
+}
+
+enum TipoFrente {
+  MARKETING
+  CRM
+  VENDAS
+  OUTRO
+}
+
+enum TipoCanal {
+  MURAL
+  CANAL
+  DM
+}
+
+enum TipoMencao {
+  USUARIO
+  CLIENTE
+}
+
+enum NivelIndicador {
+  MACRO
+  MICRO
+}
+
+enum TipoDono {
+  EMPRESA
+  AREA
+  PESSOA
+  CLIENTE
+}
+
+enum FonteKpi {
+  DERIVADO
+  MANUAL
+  INTEGRACAO
+}
+
+enum TipoAtividade {
+  MENCAO
+  MENSAGEM
+  TAREFA
+  EVENTO
+  KPI
+  ESTAGIO_CLIENTE
+  PROJETO
+}
+
+enum TipoMacro {
+  TEMPLATE_MSG
+  ACAO_RAPIDA
+  AUTOMACAO
+}
+
+// ───────────────────────── [pessoas] usuários, áreas, organograma ─────────────────────────
+model Usuario {
+  id              String   @id @default(cuid())
+  nome            String
+  email           String   @unique
+  senhaHash       String
+  papel           Papel    @default(FUNCIONARIO)
+  ativo           Boolean  @default(true)
+  avatarCor       String?
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  // organograma: usuário pertence a uma área e pode ter um gestor (self-relation)
+  areaId          String?
+  area            Area?    @relation("UsuariosDaArea", fields: [areaId], references: [id])
+  gestorId        String?
+  gestor          Usuario? @relation("Hierarquia", fields: [gestorId], references: [id])
+  subordinados    Usuario[] @relation("Hierarquia")
+
+  // áreas das quais é gestor
+  areasGeridas    Area[]   @relation("GestorDaArea")
+
+  clientesResp    Cliente[] @relation("ResponsavelCliente")
+  boards          Board[]
+  tarefas         Tarefa[]
+  mensagens       Mensagem[]
+  mencoesRecebidas Mencao[] @relation("MencaoUsuario")
+  atividades      Atividade[] @relation("AtorAtividade")
+  eventos         EventoAgenda[] @relation("CriadorEvento")
+  participacoes   ParticipanteEvento[]
+  membrosCanal    MembroCanal[]
+  notificacoes    Notificacao[]
+  comentarios     ComentarioTarefa[]
+  refreshTokens   RefreshToken[]
+
+  @@index([areaId])
+  @@index([gestorId])
+}
+
+model Area {
+  id        String    @id @default(cuid())
+  nome      String
+  gestorId  String?
+  gestor    Usuario?  @relation("GestorDaArea", fields: [gestorId], references: [id])
+  paiId     String?
+  pai       Area?     @relation("Organograma", fields: [paiId], references: [id])
+  filhas    Area[]    @relation("Organograma")
+  membros   Usuario[] @relation("UsuariosDaArea")
+  criadoEm  DateTime  @default(now())
+
+  @@index([paiId])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tokenHash  String
+  expiraEm   DateTime
+  revogado   Boolean  @default(false)
+  criadoEm   DateTime @default(now())
+
+  @@index([usuarioId])
+}
+
+// ───────────────────────── [clientes] card universal ─────────────────────────
+model Cliente {
+  id             String         @id @default(cuid())
+  nome           String
+  emoji          String?
+  contato        String?
+  estagioEntrega EstagioEntrega @default(ONBOARDING)
+  saude          SaudeCliente   @default(BOA)
+  valorMensal    Int?           // centavos
+  camposCustom   Json?
+  responsavelId  String?
+  responsavel    Usuario?       @relation("ResponsavelCliente", fields: [responsavelId], references: [id])
+  desde          DateTime       @default(now())
+  criadoEm       DateTime       @default(now())
+  atualizadoEm   DateTime       @updatedAt
+
+  projetos       Projeto[]
+  atividades     Atividade[]
+  eventos        EventoAgenda[]
+  mencoes        Mencao[]       @relation("MencaoCliente")
+
+  @@index([responsavelId])
+  @@index([estagioEntrega])
+}
+
+// ───────────────────────── [projetos] frentes + boards (kanban por diretor) ─────────────────────────
+// Frente do cliente = Projeto (Marketing/CRM/Vendas) vinculado ao Cliente.
+model Projeto {
+  id          String      @id @default(cuid())
+  nome        String
+  tipo        TipoProjeto @default(CLIENTE)
+  frente      TipoFrente  @default(OUTRO)
+  clienteId   String?
+  cliente     Cliente?    @relation(fields: [clienteId], references: [id])
+  criadoEm    DateTime    @default(now())
+
+  tarefas     Tarefa[]
+  atividades  Atividade[]
+
+  @@index([clienteId])
+}
+
+// Kanban POR DIRETOR: board tem dono (Usuario) e colunas custom ordenáveis.
+model Board {
+  id        String        @id @default(cuid())
+  nome      String
+  donoId    String
+  dono      Usuario       @relation(fields: [donoId], references: [id])
+  cor       String?
+  criadoEm  DateTime      @default(now())
+
+  colunas   ColunaBoard[]
+  tarefas   Tarefa[]
+
+  @@index([donoId])
+}
+
+model ColunaBoard {
+  id       String   @id @default(cuid())
+  boardId  String
+  board    Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  nome     String
+  ordem    Int      @default(0)
+  tarefas  Tarefa[]
+
+  @@index([boardId])
+}
+
+model Tarefa {
+  id            String       @id @default(cuid())
+  titulo        String
+  descricao     String?
+  boardId       String
+  board         Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  colunaId      String
+  coluna        ColunaBoard  @relation(fields: [colunaId], references: [id])
+  ordem         Int          @default(0)
+  prazo         DateTime?
+  concluida     Boolean      @default(false)
+  responsavelId String?
+  responsavel   Usuario?     @relation(fields: [responsavelId], references: [id])
+  projetoId     String?
+  projeto       Projeto?     @relation(fields: [projetoId], references: [id])
+  criadoEm      DateTime     @default(now())
+
+  comentarios   ComentarioTarefa[]
+
+  @@index([boardId])
+  @@index([colunaId])
+  @@index([responsavelId])
+}
+
+model ComentarioTarefa {
+  id        String   @id @default(cuid())
+  tarefaId  String
+  tarefa    Tarefa   @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  autorId   String
+  autor     Usuario  @relation(fields: [autorId], references: [id])
+  conteudo  String
+  criadoEm  DateTime @default(now())
+
+  @@index([tarefaId])
+}
+
+// ───────────────────────── [agenda] ─────────────────────────
+model EventoAgenda {
+  id          String   @id @default(cuid())
+  titulo      String
+  descricao   String?
+  inicio      DateTime
+  fim         DateTime
+  criadorId   String
+  criador     Usuario  @relation("CriadorEvento", fields: [criadorId], references: [id])
+  clienteId   String?
+  cliente     Cliente? @relation(fields: [clienteId], references: [id])
+  criadoEm    DateTime @default(now())
+
+  participantes ParticipanteEvento[]
+  lembretes     Lembrete[]
+
+  @@index([inicio])
+  @@index([clienteId])
+}
+
+model ParticipanteEvento {
+  eventoId  String
+  evento    EventoAgenda @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  usuarioId String
+  usuario   Usuario      @relation(fields: [usuarioId], references: [id])
+
+  @@id([eventoId, usuarioId])
+}
+
+model Lembrete {
+  id         String       @id @default(cuid())
+  eventoId   String
+  evento     EventoAgenda @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dispararEm DateTime
+  enviado    Boolean      @default(false)
+
+  @@index([dispararEm])
+}
+
+// ───────────────────────── [indicadores] OKR/KPI ─────────────────────────
+model Okr {
+  id        String         @id @default(cuid())
+  titulo    String
+  nivel     NivelIndicador @default(MACRO)
+  donoTipo  TipoDono       @default(EMPRESA)
+  donoId    String?
+  periodo   String?
+  criadoEm  DateTime       @default(now())
+
+  kpis      Kpi[]
+}
+
+model Kpi {
+  id        String     @id @default(cuid())
+  nome      String
+  unidade   String?
+  meta      Float?
+  fonte     FonteKpi   @default(DERIVADO)
+  donoTipo  TipoDono   @default(EMPRESA)
+  donoId    String?
+  okrId     String?
+  okr       Okr?       @relation(fields: [okrId], references: [id])
+  criadoEm  DateTime   @default(now())
+
+  medicoes  MedicaoKpi[]
+
+  @@index([okrId])
+}
+
+model MedicaoKpi {
+  id           String   @id @default(cuid())
+  kpiId        String
+  kpi          Kpi      @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  valor        Float
+  registradoEm DateTime @default(now())
+
+  @@index([kpiId])
+}
+
+// ───────────────────────── [comunicacao] mural/canais/DM, menções ─────────────────────────
+model Canal {
+  id        String      @id @default(cuid())
+  tipo      TipoCanal   @default(CANAL)
+  nome      String?
+  criadoEm  DateTime    @default(now())
+
+  membros   MembroCanal[]
+  mensagens Mensagem[]
+}
+
+model MembroCanal {
+  canalId    String
+  canal      Canal    @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  lidoAte    DateTime?
+
+  @@id([canalId, usuarioId])
+}
+
+model Mensagem {
+  id          String   @id @default(cuid())
+  canalId     String
+  canal       Canal    @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  autorId     String
+  autor       Usuario  @relation(fields: [autorId], references: [id])
+  conteudo    String
+  // thread: respostas apontam pra mensagem-pai (mesma tabela)
+  threadPaiId String?
+  threadPai   Mensagem?  @relation("Thread", fields: [threadPaiId], references: [id])
+  respostas   Mensagem[] @relation("Thread")
+  criadoEm    DateTime @default(now())
+
+  mencoes     Mencao[]
+
+  @@index([canalId])
+  @@index([threadPaiId])
+}
+
+// Menção = gancho do card universal. Uma mensagem pode ter N menções (N clientes/usuários).
+model Mencao {
+  id         String     @id @default(cuid())
+  mensagemId String
+  mensagem   Mensagem   @relation(fields: [mensagemId], references: [id], onDelete: Cascade)
+  tipo       TipoMencao
+  usuarioId  String?
+  usuario    Usuario?   @relation("MencaoUsuario", fields: [usuarioId], references: [id])
+  clienteId  String?
+  cliente    Cliente?   @relation("MencaoCliente", fields: [clienteId], references: [id])
+  criadoEm   DateTime   @default(now())
+
+  @@index([mensagemId])
+  @@index([clienteId])
+  @@index([usuarioId])
+}
+
+// ───────────────────────── [atividades] feed (ator + alvo) ─────────────────────────
+// Espinha dorsal: alimenta o card do cliente E a visão por pessoa, derivado de eventos.
+model Atividade {
+  id          String        @id @default(cuid())
+  tipo        TipoAtividade
+  resumo      String
+  atorId      String?
+  ator        Usuario?      @relation("AtorAtividade", fields: [atorId], references: [id])
+  clienteId   String?
+  cliente     Cliente?      @relation(fields: [clienteId], references: [id])
+  projetoId   String?
+  projeto     Projeto?      @relation(fields: [projetoId], references: [id])
+  mensagemId  String?
+  payload     Json?
+  criadoEm    DateTime      @default(now())
+
+  @@index([atorId, criadoEm])
+  @@index([clienteId, criadoEm])
+}
+
+// ───────────────────────── [macros] ─────────────────────────
+model Macro {
+  id        String    @id @default(cuid())
+  nome      String
+  tipo      TipoMacro @default(TEMPLATE_MSG)
+  conteudo  Json
+  criadoEm  DateTime  @default(now())
+}
+
+// ───────────────────────── [notificacoes] ─────────────────────────
+model Notificacao {
+  id             String   @id @default(cuid())
+  destinatarioId String
+  destinatario   Usuario  @relation(fields: [destinatarioId], references: [id], onDelete: Cascade)
+  tipo           String
+  conteudo       Json
+  lida           Boolean  @default(false)
+  criadoEm       DateTime @default(now())
+
+  @@index([destinatarioId, lida])
+}

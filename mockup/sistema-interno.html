@@ -1,0 +1,857 @@
+<!doctype html>
+<!--
+  PROTOTYPE — throwaway mockup. NOT production code.
+  Pergunta que responde: "a cara/IA do Sistema Interno bate com a visão do CTO?"
+  Telas: Hub, Card Universal do Cliente, Visão por Pessoa, Kanban.
+  Hub tem 3 variações de IA (?variant=bento|list|feed) — barra flutuante embaixo / setas ← →.
+  Quando validado: dobrar a direção escolhida no apps/web real e DELETAR este arquivo.
+-->
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sistema Interno · MilennialsTECH — mockup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+          serif: ['Newsreader', 'ui-serif', 'Georgia'],
+        },
+        colors: {
+          ink: { 950:'#08080A', 900:'#0B0B0E', 850:'#0F0F13', 800:'#141418', 700:'#1B1B21', 600:'#23232B' },
+          line: 'rgba(255,255,255,0.07)',
+          accent: { DEFAULT:'#7C6CF6', soft:'#A99CFB', deep:'#5B4DD6' },
+        },
+        boxShadow: {
+          glow: '0 0 0 1px rgba(124,108,246,0.25), 0 8px 40px -12px rgba(124,108,246,0.45)',
+          panel: '0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 60px -30px rgba(0,0,0,0.8)',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html,body{background:#08080A;}
+  ::selection{background:rgba(124,108,246,.35);}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:9px;border:2px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16);background-clip:padding-box}
+  .grid-noise{background-image:radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px);background-size:22px 22px}
+  .fade-up{animation:fu .5s cubic-bezier(.22,1,.36,1) both}
+  @keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .ring-soft{box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+  [data-screen]{display:none}
+  [data-screen].active{display:block}
+</style>
+</head>
+<body class="font-sans text-zinc-200 antialiased">
+
+<div class="flex min-h-screen">
+  <!-- ════════════════ SIDEBAR (casca / hub de produtos) ════════════════ -->
+  <aside class="hidden lg:flex w-[248px] shrink-0 flex-col border-r border-line bg-ink-900/70 backdrop-blur sticky top-0 h-screen">
+    <div class="px-5 pt-5 pb-4 flex items-center gap-2.5">
+      <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-accent to-accent-deep grid place-items-center text-white font-bold text-sm shadow-glow">M</div>
+      <div class="leading-tight">
+        <div class="text-[13px] font-semibold text-white">MilennialsTECH</div>
+        <div class="text-[11px] text-zinc-500">Sistema Interno</div>
+      </div>
+    </div>
+
+    <div class="px-3 mt-1">
+      <button class="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-ink-800 ring-soft text-[13px] text-zinc-400 hover:text-zinc-200 transition">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+        Buscar
+        <span class="ml-auto text-[10px] text-zinc-600 border border-line rounded px-1.5 py-0.5">⌘K</span>
+      </button>
+    </div>
+
+    <nav class="px-3 mt-4 space-y-0.5 text-[13px]">
+      <a data-nav="hub"         onclick="go('hub')"          class="nav-item">🏠<span>Hub</span></a>
+      <a data-nav="clientes"    onclick="go('clientes')"     class="nav-item">🗂️<span>Clientes</span><span class="ml-auto text-[10px] text-zinc-600">38</span></a>
+      <a data-nav="pessoas"     onclick="go('pessoa')"       class="nav-item">👥<span>Pessoas</span></a>
+      <a data-nav="comunicacao" onclick="go('comunicacao')"  class="nav-item">💬<span>Comunicação</span><span class="ml-auto text-[10px] text-accent-soft">3</span></a>
+      <a data-nav="agenda"      onclick="go('agenda')"       class="nav-item">🗓️<span>Agenda</span></a>
+      <a data-nav="indicadores" onclick="go('indicadores')"  class="nav-item">📈<span>Indicadores</span></a>
+      <a data-nav="tv"          onclick="go('tv')"           class="nav-item">📺<span>TV-Dashboard</span></a>
+
+      <div class="px-2 pt-3 pb-1 text-[10px] uppercase tracking-wider text-zinc-600">Kanban · por diretor</div>
+      <a data-nav="kb-comercial"  onclick="openBoard('comercial')"  class="nav-item nav-sub"><span class="dotk bg-rose-400"></span><span>Comercial · Marina</span></a>
+      <a data-nav="kb-tech"       onclick="openBoard('tech')"       class="nav-item nav-sub"><span class="dotk bg-sky-400"></span><span>Tech · Rafael</span></a>
+      <a data-nav="kb-ops"        onclick="openBoard('ops')"        class="nav-item nav-sub"><span class="dotk bg-amber-400"></span><span>Operacional · João</span></a>
+      <a data-nav="kb-financeiro" onclick="openBoard('financeiro')" class="nav-item nav-sub"><span class="dotk bg-emerald-400"></span><span>Financeiro · Paula</span></a>
+      <a data-nav="kb-people"     onclick="openBoard('people')"     class="nav-item nav-sub"><span class="dotk bg-violet-400"></span><span>People · Lara</span></a>
+
+      <div class="px-2 pt-3 pb-1 text-[10px] uppercase tracking-wider text-zinc-600">Em breve</div>
+      <a class="nav-item opacity-50 cursor-not-allowed">⚡<span>Macros</span><span class="ml-auto text-[9px] text-zinc-600 border border-line rounded px-1">F8</span></a>
+      <a class="nav-item opacity-50 cursor-not-allowed">🌳<span>Organograma</span></a>
+    </nav>
+
+    <div class="mt-auto p-3">
+      <div class="text-[10px] uppercase tracking-wider text-zinc-600 px-2 mb-2">Diretoria · online</div>
+      <div class="flex -space-x-2 px-2">
+        <div class="avatar bg-rose-500">MC</div>
+        <div class="avatar bg-sky-500">RT</div>
+        <div class="avatar bg-amber-500">JO</div>
+        <div class="avatar bg-emerald-500">PF</div>
+        <div class="avatar bg-violet-500">LP</div>
+      </div>
+      <div class="mt-3 flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-ink-800 transition cursor-pointer">
+        <div class="avatar bg-gradient-to-br from-accent to-accent-deep">GA</div>
+        <div class="leading-tight"><div class="text-[12px] text-zinc-200">Gabriel A.</div><div class="text-[11px] text-zinc-500">CTO</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════ MAIN ════════════════ -->
+  <main class="flex-1 min-w-0 grid-noise">
+
+    <!-- ───────── HUB ───────── -->
+    <section data-screen="hub" class="active">
+      <div class="px-8 pt-9 pb-6 max-w-[1180px] mx-auto">
+        <div class="flex items-end justify-between gap-4 fade-up">
+          <div>
+            <div class="text-[12px] text-zinc-500 mb-1">Sexta · 06 jun · 09:12</div>
+            <h1 class="font-serif text-[34px] leading-none text-white">Bom dia, Gabriel.</h1>
+            <p class="text-zinc-400 mt-2 text-[14px]">5 diretorias ativas · <span class="text-accent-soft">12 movimentações</span> desde ontem à noite.</p>
+          </div>
+          <button class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-lg bg-accent text-white text-[13px] font-medium hover:bg-accent-deep transition shadow-glow">+ Novo</button>
+        </div>
+      </div>
+
+      <!-- VARIANT: BENTO -->
+      <div data-variant="bento" class="hub-variant px-8 pb-24 max-w-[1180px] mx-auto">
+        <div class="grid grid-cols-12 gap-4">
+          <div class="col-span-12 md:col-span-8 grid grid-cols-2 gap-4">
+            <button onclick="go('clientes')" class="tile group">
+              <div class="tile-ic bg-rose-500/15 text-rose-300">🗂️</div>
+              <div class="tile-t">Clientes</div>
+              <div class="tile-d">Card universal · cada cliente é um projeto</div>
+              <div class="mt-3 text-[22px] font-serif text-white">38 <span class="text-[12px] text-zinc-500 font-sans">ativos</span></div>
+            </button>
+            <button onclick="go('kanban')" class="tile group">
+              <div class="tile-ic bg-sky-500/15 text-sky-300">📋</div>
+              <div class="tile-t">Projetos</div>
+              <div class="tile-d">Kanban · marketing, CRM, vendas</div>
+              <div class="mt-3 text-[22px] font-serif text-white">71 <span class="text-[12px] text-zinc-500 font-sans">em curso</span></div>
+            </button>
+            <button onclick="go('pessoa')" class="tile group col-span-2">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="tile-ic bg-emerald-500/15 text-emerald-300">👥</div>
+                  <div class="tile-t">Pessoas</div>
+                  <div class="tile-d">O que cada diretoria está fazendo agora</div>
+                </div>
+                <div class="flex -space-x-2">
+                  <div class="avatar bg-rose-500">MC</div><div class="avatar bg-sky-500">RT</div><div class="avatar bg-amber-500">JO</div><div class="avatar bg-emerald-500">PF</div>
+                </div>
+              </div>
+            </button>
+          </div>
+          <!-- pulso -->
+          <div class="col-span-12 md:col-span-4 rounded-2xl border border-line bg-ink-850/60 shadow-panel p-5">
+            <div class="flex items-center justify-between mb-3"><div class="text-[13px] font-semibold text-white">Pulso da empresa</div><span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span></div>
+            <div class="space-y-3.5 text-[12.5px]">
+              <div class="pulse"><b class="text-rose-300">Marina</b> moveu <b>Clínica Vitalis</b> p/ Proposta enviada</div>
+              <div class="pulse"><b class="text-sky-300">Rafael</b> fechou 3 tarefas em <b>Loja Norte · CRM</b></div>
+              <div class="pulse"><b class="text-amber-300">João</b> agendou reunião com <b>Studio Belle</b></div>
+              <div class="pulse"><b class="text-emerald-300">Paula</b> atualizou KPI <b>MRR</b> +4,2%</div>
+              <div class="pulse"><b class="text-violet-300">Lara</b> mencionou <b>@AgroVerde</b> no mural</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VARIANT: LIST -->
+      <div data-variant="list" class="hub-variant hidden px-8 pb-24 max-w-[860px] mx-auto">
+        <div class="rounded-2xl border border-line bg-ink-850/60 shadow-panel overflow-hidden">
+          <div class="row-h">Acesso rápido</div>
+          <button onclick="go('clientes')" class="row"><span class="row-ic">🗂️</span><span class="row-t">Clientes</span><span class="row-d">Card universal · 38 ativos</span><kbd class="kbd">↵</kbd></button>
+          <button onclick="go('kanban')"  class="row"><span class="row-ic">📋</span><span class="row-t">Projetos</span><span class="row-d">71 em curso · Kanban</span><kbd class="kbd">P</kbd></button>
+          <button onclick="go('pessoa')"  class="row"><span class="row-ic">👥</span><span class="row-t">Pessoas</span><span class="row-d">Feed por diretoria</span><kbd class="kbd">U</kbd></button>
+          <div class="row-h border-t border-line">Movimentações recentes</div>
+          <div class="row-feed"><span class="dot bg-rose-400"></span>Marina → Clínica Vitalis · <span class="text-zinc-500">Proposta enviada</span><span class="ml-auto text-zinc-600 text-[11px]">12min</span></div>
+          <div class="row-feed"><span class="dot bg-sky-400"></span>Rafael → Loja Norte · CRM · <span class="text-zinc-500">3 tarefas concluídas</span><span class="ml-auto text-zinc-600 text-[11px]">38min</span></div>
+          <div class="row-feed"><span class="dot bg-amber-400"></span>João → Studio Belle · <span class="text-zinc-500">reunião agendada</span><span class="ml-auto text-zinc-600 text-[11px]">1h</span></div>
+          <div class="row-feed"><span class="dot bg-emerald-400"></span>Paula → KPI MRR · <span class="text-zinc-500">+4,2%</span><span class="ml-auto text-zinc-600 text-[11px]">2h</span></div>
+        </div>
+      </div>
+
+      <!-- VARIANT: FEED -->
+      <div data-variant="feed" class="hub-variant hidden px-8 pb-24 max-w-[1180px] mx-auto">
+        <div class="grid grid-cols-12 gap-6">
+          <div class="col-span-12 lg:col-span-8">
+            <div class="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">O time, agora</div>
+            <div class="space-y-3">
+              <div class="feedcard"><div class="avatar bg-rose-500">MC</div><div><div class="fc-h"><b>Marina Costa</b> · Diretora Comercial <span class="text-zinc-600">· 12min</span></div><div class="fc-b">Moveu <b class="text-white">Clínica Vitalis</b> para <span class="pill pill-amber">Proposta enviada</span> e anexou o orçamento revisado.</div></div></div>
+              <div class="feedcard"><div class="avatar bg-sky-500">RT</div><div><div class="fc-h"><b>Rafael Teixeira</b> · Diretor de Tech <span class="text-zinc-600">· 38min</span></div><div class="fc-b">Concluiu 3 tarefas em <b class="text-white">Loja Norte · CRM</b>. Sprint 92% completa.</div></div></div>
+              <div class="feedcard"><div class="avatar bg-amber-500">JO</div><div><div class="fc-h"><b>João Oliveira</b> · Diretor Operacional <span class="text-zinc-600">· 1h</span></div><div class="fc-b">Agendou reunião de kickoff com <b class="text-white">Studio Belle</b> p/ terça, 14h.</div></div></div>
+              <div class="feedcard"><div class="avatar bg-violet-500">LP</div><div><div class="fc-h"><b>Lara Pinto</b> · Diretora de People <span class="text-zinc-600">· 2h</span></div><div class="fc-b">Mencionou <b class="text-accent-soft">@AgroVerde</b> no Mural Geral — vinculado ao card.</div></div></div>
+            </div>
+          </div>
+          <div class="col-span-12 lg:col-span-4 space-y-3">
+            <div class="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">Produtos</div>
+            <button onclick="go('clientes')" class="rail">🗂️ Clientes <span class="ml-auto text-zinc-500">38</span></button>
+            <button onclick="go('kanban')"  class="rail">📋 Projetos <span class="ml-auto text-zinc-500">71</span></button>
+            <button onclick="go('pessoa')"  class="rail">👥 Pessoas <span class="ml-auto text-zinc-500">5</span></button>
+            <button class="rail opacity-50">🗓️ Agenda</button>
+            <button class="rail opacity-50">📈 Indicadores</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── CLIENTES · LISTA (Monday-style) ───────── -->
+    <section data-screen="clientes">
+      <div class="max-w-[1180px] mx-auto px-8 pt-7 pb-24">
+        <button onclick="go('hub')" class="text-[12px] text-zinc-500 hover:text-zinc-300 mb-4">← Hub</button>
+        <div class="flex items-end justify-between gap-4 fade-up">
+          <div>
+            <h1 class="font-serif text-[28px] text-white leading-none">Clientes</h1>
+            <div class="text-[13px] text-zinc-400 mt-1.5">38 ativos · card universal por cliente · clique p/ abrir</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1 bg-ink-800 ring-soft rounded-lg p-0.5 text-[12px]">
+              <button data-cliview="tabela" onclick="cliView('tabela')" class="px-2.5 py-1 rounded-md bg-white/[.06] text-white">Tabela</button>
+              <button data-cliview="board" onclick="cliView('board')" class="px-2.5 py-1 rounded-md text-zinc-500">Board</button>
+            </div>
+            <button class="btn-accent">+ Cliente</button>
+          </div>
+        </div>
+
+        <!-- TABELA -->
+        <div id="cli-tabela" class="mt-6 rounded-2xl border border-line bg-ink-850/60 shadow-panel overflow-hidden">
+          <div class="grid grid-cols-12 gap-2 px-4 py-2.5 text-[11px] uppercase tracking-wider text-zinc-500 border-b border-line bg-ink-800/40">
+            <div class="col-span-4">Cliente</div><div class="col-span-3">Frentes</div><div class="col-span-2">Responsável</div><div class="col-span-2">Entrega</div><div class="col-span-1 text-right">Saúde</div>
+          </div>
+          <button onclick="go('cliente')" class="cli-row">
+            <div class="col-span-4 flex items-center gap-3"><div class="cli-ic bg-rose-500/15">🏥</div><div><div class="cli-n">Clínica Vitalis</div><div class="cli-s">R$ 18k/mês · desde jan/24</div></div></div>
+            <div class="col-span-3 flex gap-1 flex-wrap"><span class="pill pill-sky">Marketing</span><span class="pill pill-violet">CRM</span><span class="pill pill-emerald">Vendas</span></div>
+            <div class="col-span-2 flex items-center gap-2"><div class="avatar bg-rose-500">MC</div><span class="text-[12px] text-zinc-400">Marina</span></div>
+            <div class="col-span-2"><span class="pill pill-sky">Em execução</span></div>
+            <div class="col-span-1 text-right text-emerald-400">●</div>
+          </button>
+          <button onclick="go('cliente')" class="cli-row">
+            <div class="col-span-4 flex items-center gap-3"><div class="cli-ic bg-sky-500/15">🛍️</div><div><div class="cli-n">Loja Norte</div><div class="cli-s">R$ 12k/mês · desde mar/24</div></div></div>
+            <div class="col-span-3 flex gap-1 flex-wrap"><span class="pill pill-violet">CRM</span><span class="pill pill-emerald">Vendas</span></div>
+            <div class="col-span-2 flex items-center gap-2"><div class="avatar bg-sky-500">RT</div><span class="text-[12px] text-zinc-400">Rafael</span></div>
+            <div class="col-span-2"><span class="pill pill-emerald">Saudável</span></div>
+            <div class="col-span-1 text-right text-emerald-400">●</div>
+          </button>
+          <button onclick="go('cliente')" class="cli-row">
+            <div class="col-span-4 flex items-center gap-3"><div class="cli-ic bg-amber-500/15">💇</div><div><div class="cli-n">Studio Belle</div><div class="cli-s">R$ 9k/mês · desde mai/24</div></div></div>
+            <div class="col-span-3 flex gap-1 flex-wrap"><span class="pill pill-sky">Marketing</span></div>
+            <div class="col-span-2 flex items-center gap-2"><div class="avatar bg-amber-500">JO</div><span class="text-[12px] text-zinc-400">João</span></div>
+            <div class="col-span-2"><span class="pill pill-amber">Onboarding</span></div>
+            <div class="col-span-1 text-right text-amber-400">●</div>
+          </button>
+          <button onclick="go('cliente')" class="cli-row">
+            <div class="col-span-4 flex items-center gap-3"><div class="cli-ic bg-emerald-500/15">🌱</div><div><div class="cli-n">AgroVerde</div><div class="cli-s">R$ 25k/mês · desde out/23</div></div></div>
+            <div class="col-span-3 flex gap-1 flex-wrap"><span class="pill pill-sky">Marketing</span><span class="pill pill-violet">CRM</span><span class="pill pill-emerald">Vendas</span></div>
+            <div class="col-span-2 flex items-center gap-2"><div class="avatar bg-violet-500">LP</div><span class="text-[12px] text-zinc-400">Lara</span></div>
+            <div class="col-span-2"><span class="pill pill-rose">Em risco</span></div>
+            <div class="col-span-1 text-right text-rose-400">●</div>
+          </button>
+          <button onclick="go('cliente')" class="cli-row">
+            <div class="col-span-4 flex items-center gap-3"><div class="cli-ic bg-indigo-500/15">🏛️</div><div><div class="cli-n">Escritório Lemos</div><div class="cli-s">R$ 7k/mês · desde fev/25</div></div></div>
+            <div class="col-span-3 flex gap-1 flex-wrap"><span class="pill pill-violet">CRM</span></div>
+            <div class="col-span-2 flex items-center gap-2"><div class="avatar bg-rose-500">MC</div><span class="text-[12px] text-zinc-400">Marina</span></div>
+            <div class="col-span-2"><span class="pill pill-violet">Em revisão</span></div>
+            <div class="col-span-1 text-right text-emerald-400">●</div>
+          </button>
+        </div>
+
+        <!-- BOARD (por estágio de ENTREGA — pós-venda) -->
+        <div id="cli-board" class="hidden mt-6 grid grid-cols-5 gap-4 min-w-[1000px]">
+          <div class="kcol"><div class="kcol-h">Onboarding <span>1</span></div>
+            <button onclick="go('cliente')" class="kcard text-left w-full"><div class="kc-t">💇 Studio Belle</div><div class="kc-m"><span class="pill pill-sky">Marketing</span><div class="avatar bg-amber-500">JO</div></div></button>
+          </div>
+          <div class="kcol"><div class="kcol-h">Em execução <span>1</span></div>
+            <button onclick="go('cliente')" class="kcard text-left w-full ring-1 ring-accent/30"><div class="kc-t">🏥 Clínica Vitalis</div><div class="kc-m"><span class="pill pill-violet">3 frentes</span><div class="avatar bg-rose-500">MC</div></div></button>
+          </div>
+          <div class="kcol"><div class="kcol-h">Em revisão <span>1</span></div>
+            <button onclick="go('cliente')" class="kcard text-left w-full"><div class="kc-t">🏛️ Escritório Lemos</div><div class="kc-m"><span class="pill pill-violet">CRM</span><div class="avatar bg-rose-500">MC</div></div></button>
+          </div>
+          <div class="kcol"><div class="kcol-h">Saudável <span>1</span></div>
+            <button onclick="go('cliente')" class="kcard text-left w-full"><div class="kc-t">🛍️ Loja Norte</div><div class="kc-m"><span class="pill pill-emerald">Vendas</span><div class="avatar bg-sky-500">RT</div></div></button>
+          </div>
+          <div class="kcol"><div class="kcol-h">Em risco <span>1</span></div>
+            <button onclick="go('cliente')" class="kcard text-left w-full"><div class="kc-t">🌱 AgroVerde</div><div class="kc-d">NPS em queda</div><div class="kc-m"><span class="pill pill-sky">3 frentes</span><div class="avatar bg-violet-500">LP</div></div></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── CARD UNIVERSAL DO CLIENTE ───────── -->
+    <section data-screen="cliente">
+      <div class="max-w-[1180px] mx-auto px-8 pt-7 pb-24">
+        <button onclick="go('hub')" class="text-[12px] text-zinc-500 hover:text-zinc-300 mb-4">← Hub</button>
+        <div class="flex items-start justify-between gap-4 fade-up">
+          <div class="flex items-center gap-4">
+            <div class="h-14 w-14 rounded-2xl bg-gradient-to-br from-rose-500/30 to-rose-700/20 ring-1 ring-rose-400/20 grid place-items-center text-2xl">🏥</div>
+            <div>
+              <div class="flex items-center gap-2.5">
+                <h1 class="font-serif text-[28px] text-white leading-none">Clínica Vitalis</h1>
+                <span class="pill pill-sky">Em execução</span>
+              </div>
+              <div class="text-[13px] text-zinc-400 mt-1.5 flex items-center gap-3">
+                <span>Resp. <b class="text-zinc-200">Marina Costa</b></span><span class="text-zinc-700">·</span>
+                <span class="pill-soft">Marketing</span><span class="pill-soft">CRM</span><span class="pill-soft">Vendas</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn-ghost">Editar</button>
+            <button class="btn-accent">+ Frente</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-5 mt-7">
+          <!-- esquerda: dados + frentes -->
+          <div class="col-span-12 lg:col-span-3 space-y-4">
+            <div class="card">
+              <div class="card-h">Dados</div>
+              <dl class="text-[13px] space-y-2.5">
+                <div class="flex justify-between"><dt class="text-zinc-500">Contato</dt><dd class="text-zinc-200">Dra. Helena</dd></div>
+                <div class="flex justify-between"><dt class="text-zinc-500">Desde</dt><dd class="text-zinc-200">jan/2024</dd></div>
+                <div class="flex justify-between"><dt class="text-zinc-500">Contrato</dt><dd class="text-emerald-300">R$ 18k/mês</dd></div>
+                <div class="flex justify-between"><dt class="text-zinc-500">Saúde</dt><dd class="text-emerald-300">● Boa</dd></div>
+              </dl>
+            </div>
+            <div class="card">
+              <div class="card-h">Frentes (projetos)</div>
+              <div class="space-y-2 text-[13px]">
+                <div class="frente"><span>Campanha Q3</span><span class="pill pill-sky">Marketing</span></div>
+                <div class="frente"><span>Onboarding CRM</span><span class="pill pill-violet">CRM</span></div>
+                <div class="frente"><span>Playbook vendas</span><span class="pill pill-emerald">Vendas</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- centro: TIMELINE / FEED com thread inteira -->
+          <div class="col-span-12 lg:col-span-6">
+            <div class="flex items-center gap-2 mb-3 text-[13px]">
+              <button class="tab-active">Timeline</button><button class="tab">Comunicação</button><button class="tab">Arquivos</button>
+            </div>
+            <div class="space-y-3">
+              <!-- só as MENÇÕES a este cliente entram aqui (não a thread inteira do canal) -->
+              <div class="card !p-0 overflow-hidden fade-up">
+                <div class="px-4 py-2.5 border-b border-line flex items-center gap-2 text-[12px] text-zinc-400 bg-ink-800/50">
+                  💬 Menções a <span class="ment ment-cli">@ClínicaVitalis</span> no chat <span class="ml-auto text-[11px] text-zinc-600">vêm do #mural-geral, #comercial…</span>
+                </div>
+                <div class="p-4 space-y-3">
+                  <!-- mensagem marcada + thread dela -->
+                  <div class="msg-row">
+                    <div class="avatar bg-rose-500">MC</div>
+                    <div class="flex-1">
+                      <div class="msg-h">Marina <span>· #mural-geral · 09:02</span></div>
+                      <div class="msg-b">A <span class="ment ment-cli">@ClínicaVitalis</span> aprovou o conceito 🎉 Subindo a entrega hoje.</div>
+                      <div class="thread">
+                        <div class="msg-row sub"><div class="avatar bg-amber-500">JO</div><div><div class="msg-h">João <span>· 09:08</span></div><div class="msg-b">Marco o kickoff pra terça. 🗓️</div></div></div>
+                      </div>
+                      <div class="msg-actions"><button>↩ Responder daqui</button></div>
+                    </div>
+                  </div>
+                  <div class="msg-row">
+                    <div class="avatar bg-sky-500">RT</div>
+                    <div class="flex-1">
+                      <div class="msg-h">Rafael <span>· #tech · ontem</span></div>
+                      <div class="msg-b">Integração CRM da <span class="ment ment-cli">@ClínicaVitalis</span> concluída ✅</div>
+                      <div class="msg-actions"><button>↩ Responder daqui</button></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="px-4 py-2 border-t border-line text-[11px] text-zinc-600">2 menções a este cliente · responder aqui posta de volta no canal de origem</div>
+              </div>
+
+              <div class="tl"><span class="tl-dot bg-sky-400"></span><div class="tl-b"><b class="text-white">Marina</b> moveu a entrega para <span class="pill pill-sky">Em execução</span><div class="tl-t">hoje · 09:14</div></div></div>
+              <div class="tl"><span class="tl-dot bg-sky-400"></span><div class="tl-b"><b class="text-white">Rafael</b> concluiu <b>Integração CRM</b> em Onboarding CRM<div class="tl-t">hoje · 08:40</div></div></div>
+              <div class="tl"><span class="tl-dot bg-violet-400"></span><div class="tl-b">Reunião <b>Kickoff campanha</b> agendada p/ terça 14h<div class="tl-t">ontem · 17:20</div></div></div>
+              <div class="tl"><span class="tl-dot bg-emerald-400"></span><div class="tl-b">KPI <b>Leads/mês</b> atualizado: 142 → <span class="text-emerald-300">187</span><div class="tl-t">ontem · 11:00</div></div></div>
+            </div>
+          </div>
+
+          <!-- direita: equipe + agenda -->
+          <div class="col-span-12 lg:col-span-3 space-y-4">
+            <div class="card">
+              <div class="card-h">Equipe no card</div>
+              <div class="space-y-2.5 text-[13px]">
+                <div class="flex items-center gap-2.5"><div class="avatar bg-rose-500">MC</div>Marina <span class="text-zinc-600 ml-auto text-[11px]">Comercial</span></div>
+                <div class="flex items-center gap-2.5"><div class="avatar bg-sky-500">RT</div>Rafael <span class="text-zinc-600 ml-auto text-[11px]">Tech</span></div>
+                <div class="flex items-center gap-2.5"><div class="avatar bg-amber-500">JO</div>João <span class="text-zinc-600 ml-auto text-[11px]">Ops</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">Próximos</div>
+              <div class="space-y-2.5 text-[13px]">
+                <div><div class="text-zinc-200">Kickoff campanha</div><div class="text-zinc-500 text-[12px]">ter · 14:00</div></div>
+                <div><div class="text-zinc-200">Follow-up proposta</div><div class="text-zinc-500 text-[12px]">qui · 10:00</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── VISÃO POR PESSOA ───────── -->
+    <section data-screen="pessoa">
+      <div class="max-w-[1000px] mx-auto px-8 pt-7 pb-24">
+        <button onclick="go('hub')" class="text-[12px] text-zinc-500 hover:text-zinc-300 mb-4">← Hub</button>
+        <div class="flex items-center gap-4 fade-up">
+          <div class="avatar !h-16 !w-16 !text-xl bg-rose-500">MC</div>
+          <div>
+            <h1 class="font-serif text-[28px] text-white leading-none">Marina Costa</h1>
+            <div class="text-[13px] text-zinc-400 mt-1.5">Diretora Comercial · <span class="text-zinc-500">visível p/ toda a diretoria</span></div>
+          </div>
+          <div class="ml-auto flex gap-2">
+            <div class="stat"><div class="stat-n">12</div><div class="stat-l">tarefas ativas</div></div>
+            <div class="stat"><div class="stat-n">4</div><div class="stat-l">reuniões hoje</div></div>
+            <div class="stat"><div class="stat-n">9</div><div class="stat-l">clientes tocados</div></div>
+          </div>
+        </div>
+
+        <div class="mt-7 grid grid-cols-12 gap-5">
+          <div class="col-span-12 lg:col-span-8">
+            <div class="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">Atividade · hoje</div>
+            <div class="space-y-3">
+              <div class="feedcard"><span class="tl-dot bg-amber-400 mt-2"></span><div><div class="fc-b">Moveu <b class="text-white">Clínica Vitalis</b> → <span class="pill pill-amber">Proposta enviada</span></div><div class="fc-h text-zinc-600">09:14 · Clientes</div></div></div>
+              <div class="feedcard"><span class="tl-dot bg-violet-400 mt-2"></span><div><div class="fc-b">Comentou na thread <b class="text-white">#mural-geral</b> mencionando <span class="text-accent-soft">@ClínicaVitalis</span></div><div class="fc-h text-zinc-600">09:02 · Comunicação</div></div></div>
+              <div class="feedcard"><span class="tl-dot bg-sky-400 mt-2"></span><div><div class="fc-b">Criou tarefa <b class="text-white">Revisar orçamento</b> em Studio Belle</div><div class="fc-h text-zinc-600">08:30 · Projetos</div></div></div>
+              <div class="feedcard"><span class="tl-dot bg-emerald-400 mt-2"></span><div><div class="fc-b">Reunião concluída com <b class="text-white">Loja Norte</b></div><div class="fc-h text-zinc-600">08:00 · Agenda</div></div></div>
+            </div>
+          </div>
+          <div class="col-span-12 lg:col-span-4 space-y-4">
+            <div class="card"><div class="card-h">Clientes sob responsa</div><div class="space-y-2 text-[13px]"><div class="frente"><span>Clínica Vitalis</span><span class="pill pill-amber">Proposta</span></div><div class="frente"><span>Studio Belle</span><span class="pill pill-sky">Kickoff</span></div><div class="frente"><span>Loja Norte</span><span class="pill pill-emerald">Ativo</span></div></div></div>
+            <div class="card"><div class="card-h">Carga da semana</div><div class="flex items-end gap-1.5 h-20 mt-1">
+              <div class="bar" style="height:40%"></div><div class="bar" style="height:65%"></div><div class="bar" style="height:90%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:75%"></div>
+            </div><div class="flex justify-between text-[10px] text-zinc-600 mt-1.5"><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── KANBAN POR DIRETOR (board próprio, colunas custom) ───────── -->
+    <section data-screen="kanban">
+      <div class="px-8 pt-7 pb-24">
+        <button onclick="go('hub')" class="text-[12px] text-zinc-500 hover:text-zinc-300 mb-4">← Hub</button>
+        <div class="flex items-center justify-between fade-up">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <span id="boardDot" class="dotk bg-rose-400 !h-2.5 !w-2.5"></span>
+              <h1 id="boardTitle" class="font-serif text-[28px] text-white leading-none">Kanban · Comercial</h1>
+            </div>
+            <div id="boardHint" class="text-[13px] text-zinc-400 mt-1.5"></div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-ghost">⚙ Etapas</button><button class="btn-accent">+ Tarefa</button>
+          </div>
+        </div>
+        <div id="boardCols" class="mt-6 grid gap-4 min-w-[920px]"></div>
+      </div>
+    </section>
+
+    <!-- ───────── COMUNICAÇÃO · MURAL (Slack-style) ───────── -->
+    <section data-screen="comunicacao">
+      <div class="flex h-screen">
+        <!-- canais -->
+        <div class="w-[220px] shrink-0 border-r border-line bg-ink-900/40 p-3 overflow-y-auto">
+          <div class="text-[11px] uppercase tracking-wider text-zinc-600 px-2 mb-2">Canais</div>
+          <a class="ch on"># mural-geral</a>
+          <a class="ch"># comercial</a>
+          <a class="ch"># tech</a>
+          <a class="ch"># avisos</a>
+          <div class="text-[11px] uppercase tracking-wider text-zinc-600 px-2 mt-4 mb-2">Inbox · DMs</div>
+          <a class="ch"><span class="dotk bg-emerald-400"></span> Rafael T.</a>
+          <a class="ch"><span class="dotk bg-amber-400"></span> João O.</a>
+          <a class="ch flex"><span class="dotk bg-violet-400"></span> Lara P. <span class="ml-auto text-[10px] bg-accent text-white rounded-full px-1.5">2</span></a>
+        </div>
+        <!-- feed do canal -->
+        <div class="flex-1 min-w-0 flex flex-col">
+          <div class="px-6 py-3.5 border-b border-line flex items-center justify-between">
+            <div><div class="text-[15px] font-semibold text-white"># mural-geral</div><div class="text-[12px] text-zinc-500">Toda a empresa · 28 membros</div></div>
+            <div class="flex -space-x-2"><div class="avatar bg-rose-500">MC</div><div class="avatar bg-sky-500">RT</div><div class="avatar bg-amber-500">JO</div><div class="avatar bg-emerald-500">PF</div></div>
+          </div>
+          <div class="flex-1 overflow-y-auto px-6 py-5 space-y-1">
+            <!-- mensagem com @cliente → CONTA no card daquele cliente + tem thread -->
+            <div class="msg-row group">
+              <div class="avatar bg-rose-500">MC</div>
+              <div class="flex-1">
+                <div class="msg-h">Marina Costa <span>· 09:02</span> <span class="card-chip">🔗 conta no card · ClínicaVitalis</span></div>
+                <div class="msg-b">Pessoal, a <span class="ment ment-cli">@ClínicaVitalis</span> aprovou o conceito 🎉 Subindo a entrega da campanha hoje.</div>
+                <div class="msg-actions"><button>↩ Responder</button><button>🔗 Vincular cliente</button><button>😀</button></div>
+                <!-- thread de respostas -->
+                <button class="thread-toggle">💬 2 respostas · Rafael, João <span class="text-zinc-600">· última 09:08</span></button>
+                <div class="thread">
+                  <div class="msg-row sub"><div class="avatar bg-sky-500">RT</div><div><div class="msg-h">Rafael <span>· 09:05</span></div><div class="msg-b">Show. CRM deles já tá com integração pronta.</div></div></div>
+                  <div class="msg-row sub"><div class="avatar bg-amber-500">JO</div><div><div class="msg-h">João <span>· 09:08</span></div><div class="msg-b">Marco o kickoff pra terça então. <span class="ment ment-cli">@ClínicaVitalis</span></div>
+                    <div class="mt-2 flex items-center gap-2 text-[12px] text-zinc-400 bg-ink-850/60 border border-line rounded-lg px-3 py-2 w-fit">🗓️ Reunião criada · ter 14:00 · 4 participantes</div></div></div>
+                </div>
+              </div>
+            </div>
+            <!-- mensagem de OUTRO assunto/cliente no mesmo canal → conta noutro card -->
+            <div class="msg-row group">
+              <div class="avatar bg-sky-500">RT</div>
+              <div class="flex-1">
+                <div class="msg-h">Rafael Teixeira <span>· 09:20</span> <span class="card-chip">🔗 conta no card · LojaNorte</span></div>
+                <div class="msg-b">Deploy do CRM da <span class="ment ment-cli">@LojaNorte</span> tá no ar. <span class="ment ment-user">@João</span> pode validar?</div>
+                <div class="msg-actions"><button>↩ Responder</button><button>🔗 Vincular cliente</button><button>😀</button></div>
+              </div>
+            </div>
+            <!-- mensagem sem @cliente → NÃO entra em card nenhum -->
+            <div class="msg-row group">
+              <div class="avatar bg-violet-500">LP</div>
+              <div class="flex-1">
+                <div class="msg-h">Lara Pinto <span>· 09:32</span></div>
+                <div class="msg-b">Lembrete: happy hour sexta 🍻 (sem cliente — não conta em card)</div>
+                <div class="msg-actions"><button>↩ Responder</button><button>🔗 Vincular cliente</button><button>😀</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-line">
+            <div class="flex items-center gap-2 bg-ink-800 ring-soft rounded-xl px-3.5 py-2.5">
+              <input placeholder="Mensagem para #mural-geral …  use @ p/ marcar pessoa ou cliente" class="bg-transparent flex-1 text-[13px] text-zinc-200 placeholder:text-zinc-600 outline-none">
+              <button class="text-zinc-500 text-[13px]">@</button><button class="btn-accent">Enviar</button>
+            </div>
+            <div class="text-[11px] text-zinc-600 mt-2">Marcar <span class="ment ment-cli">@cliente</span> → vincula a thread ao card + notifica. Marcar <span class="ment ment-user">@pessoa</span> → notifica e entra no feed dela.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── AGENDA & CRONOGRAMA ───────── -->
+    <section data-screen="agenda">
+      <div class="max-w-[1180px] mx-auto px-8 pt-7 pb-24">
+        <button onclick="go('hub')" class="text-[12px] text-zinc-500 hover:text-zinc-300 mb-4">← Hub</button>
+        <div class="flex items-end justify-between gap-4 fade-up">
+          <div><h1 class="font-serif text-[28px] text-white leading-none">Agenda</h1><div class="text-[13px] text-zinc-400 mt-1.5">Cronograma da empresa · diretoria vê a agenda de todos</div></div>
+          <div class="flex items-center gap-2">
+            <select class="appearance-none bg-ink-800 ring-soft rounded-lg px-3 py-1.5 text-[13px] text-zinc-200"><option>Todos os diretores</option><option>Marina</option><option>Rafael</option><option>Só eu</option></select>
+            <button class="btn-accent">+ Evento</button>
+          </div>
+        </div>
+
+        <!-- semana -->
+        <div class="mt-6 rounded-2xl border border-line bg-ink-850/60 shadow-panel overflow-hidden">
+          <div class="grid grid-cols-5 text-[11px] text-zinc-500 border-b border-line bg-ink-800/40">
+            <div class="px-3 py-2">SEG 02</div><div class="px-3 py-2">TER 03</div><div class="px-3 py-2 text-accent-soft">QUA 04 · hoje</div><div class="px-3 py-2">QUI 05</div><div class="px-3 py-2">SEX 06</div>
+          </div>
+          <div class="grid grid-cols-5 min-h-[340px] divide-x divide-line text-[11.5px]">
+            <div class="p-2 space-y-2"><div class="ev ev-sky">09h Daily Tech</div><div class="ev ev-rose">15h Call Loja Norte</div></div>
+            <div class="p-2 space-y-2"><div class="ev ev-violet">14h Kickoff · Clínica Vitalis</div></div>
+            <div class="p-2 space-y-2 bg-accent/[.04]"><div class="ev ev-amber">10h Reunião diretoria</div><div class="ev ev-sky">14h Sprint review</div><div class="ev ev-emerald">16h Fechamento financeiro</div></div>
+            <div class="p-2 space-y-2"><div class="ev ev-rose">11h Follow-up proposta</div></div>
+            <div class="p-2 space-y-2"><div class="ev ev-violet">09h Entrevista — People</div><div class="ev ev-amber">17h Retro</div></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-5 mt-6">
+          <div class="col-span-12 lg:col-span-7">
+            <div class="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">Hoje · quem está em quê</div>
+            <div class="space-y-2.5">
+              <div class="card flex items-center gap-3"><div class="text-zinc-500 text-[12px] w-12">10:00</div><div class="flex-1"><div class="text-[13px] text-white">Reunião de diretoria</div><div class="text-[12px] text-zinc-500">sala principal</div></div><div class="flex -space-x-2"><div class="avatar bg-rose-500">MC</div><div class="avatar bg-sky-500">RT</div><div class="avatar bg-amber-500">JO</div><div class="avatar bg-emerald-500">PF</div><div class="avatar bg-violet-500">LP</div></div></div>
+              <div class="card flex items-center gap-3"><div class="text-zinc-500 text-[12px] w-12">14:00</div><div class="flex-1"><div class="text-[13px] text-white">Sprint review <span class="pill pill-sky ml-1">Tech</span></div><div class="text-[12px] text-zinc-500">vinculado a Loja Norte</div></div><div class="flex -space-x-2"><div class="avatar bg-sky-500">RT</div></div></div>
+              <div class="card flex items-center gap-3"><div class="text-zinc-500 text-[12px] w-12">16:00</div><div class="flex-1"><div class="text-[13px] text-white">Fechamento financeiro <span class="pill pill-emerald ml-1">Fin</span></div></div><div class="flex -space-x-2"><div class="avatar bg-emerald-500">PF</div></div></div>
+            </div>
+          </div>
+          <div class="col-span-12 lg:col-span-5">
+            <div class="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">Lembretes</div>
+            <div class="card space-y-2.5 text-[13px]">
+              <div class="flex items-center gap-2 text-zinc-300">🔔 Enviar proposta Clínica Vitalis <span class="ml-auto text-zinc-600 text-[11px]">em 2h</span></div>
+              <div class="flex items-center gap-2 text-zinc-300">🔔 Renovação AgroVerde <span class="ml-auto text-zinc-600 text-[11px]">amanhã</span></div>
+              <div class="flex items-center gap-2 text-zinc-300">🔔 Cobrança Escritório Lemos <span class="ml-auto text-rose-300 text-[11px]">atrasado</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── INDICADORES · OKR / KPI ───────── -->
+    <section data-screen="indicadores">
+      <div class="max-w-[1180px] mx-auto px-8 pt-7 pb-24">
+        <button onclick="go('hub')" class="text-[12px] text-zinc-500 hover:text-zinc-300 mb-4">← Hub</button>
+        <div class="flex items-end justify-between gap-4 fade-up">
+          <div><h1 class="font-serif text-[28px] text-white leading-none">Indicadores</h1><div class="text-[13px] text-zinc-400 mt-1.5">OKRs & KPIs · defina primeiro, alimente depois (dados derivados do sistema)</div></div>
+          <div class="flex gap-2"><button class="btn-ghost">+ KPI</button><button class="btn-accent">+ Definir OKR</button></div>
+        </div>
+
+        <div class="flex gap-2 mt-6 text-[12px]"><button class="tab-active">Macro · Empresa</button><button class="tab">Micro · Áreas</button><button class="tab">Por cliente</button></div>
+
+        <div class="grid grid-cols-12 gap-5 mt-4">
+          <div class="col-span-12 lg:col-span-6 card">
+            <div class="flex items-center justify-between mb-1"><div class="text-[14px] text-white font-semibold">Crescer receita recorrente</div><span class="pill pill-violet">Macro · CEO</span></div>
+            <div class="text-[12px] text-zinc-500 mb-4">OKR Q3 · dono: empresa</div>
+            <div class="space-y-3.5">
+              <div class="kpi"><div class="kpi-top"><span>MRR</span><span class="text-white">R$ 184k <span class="text-emerald-400 text-[11px]">/ 220k</span></span></div><div class="prog"><i style="width:84%"></i></div><div class="kpi-src">derivado · soma de contratos ativos</div></div>
+              <div class="kpi"><div class="kpi-top"><span>Churn</span><span class="text-white">2,1% <span class="text-emerald-400 text-[11px]">/ &lt;3%</span></span></div><div class="prog"><i style="width:70%" class="!bg-emerald-400"></i></div><div class="kpi-src">derivado · clientes Em risco / total</div></div>
+            </div>
+          </div>
+          <div class="col-span-12 lg:col-span-6 card">
+            <div class="flex items-center justify-between mb-1"><div class="text-[14px] text-white font-semibold">Excelência na entrega</div><span class="pill pill-sky">Macro · Ops</span></div>
+            <div class="text-[12px] text-zinc-500 mb-4">OKR Q3 · dono: Operacional</div>
+            <div class="space-y-3.5">
+              <div class="kpi"><div class="kpi-top"><span>Entregas no prazo</span><span class="text-white">91% <span class="text-zinc-500 text-[11px]">/ 95%</span></span></div><div class="prog"><i style="width:91%"></i></div><div class="kpi-src">derivado · tarefas concluídas no prazo</div></div>
+              <div class="kpi"><div class="kpi-top"><span>NPS médio</span><span class="text-white">8,4 <span class="text-zinc-500 text-[11px]">/ 9</span></span></div><div class="prog"><i style="width:84%"></i></div><div class="kpi-src">manual · pesquisa trimestral</div></div>
+            </div>
+          </div>
+          <div class="col-span-12 lg:col-span-4 card">
+            <div class="flex items-center justify-between mb-3"><div class="text-[13px] text-white font-semibold">Comercial · Marina</div><span class="pill pill-rose">Micro</span></div>
+            <div class="kpi"><div class="kpi-top"><span>Renovações</span><span class="text-white">5 / 7</span></div><div class="prog"><i style="width:71%"></i></div><div class="kpi-src">derivado · board Renovação</div></div>
+          </div>
+          <div class="col-span-12 lg:col-span-4 card">
+            <div class="flex items-center justify-between mb-3"><div class="text-[13px] text-white font-semibold">Tech · Rafael</div><span class="pill pill-sky">Micro</span></div>
+            <div class="kpi"><div class="kpi-top"><span>Velocidade sprint</span><span class="text-white">38 pts</span></div><div class="prog"><i style="width:76%"></i></div><div class="kpi-src">derivado · tarefas concluídas</div></div>
+          </div>
+          <div class="col-span-12 lg:col-span-4 card border-dashed grid place-items-center text-zinc-600 hover:text-accent-soft hover:border-accent/40 cursor-pointer min-h-[120px] text-[13px]">+ Definir indicador da área</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────── TV-DASHBOARD ───────── -->
+    <section data-screen="tv">
+      <div class="px-10 py-9">
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center gap-3"><div class="h-9 w-9 rounded-lg bg-gradient-to-br from-accent to-accent-deep grid place-items-center text-white font-bold shadow-glow">M</div><div class="font-serif text-[24px] text-white">MilennialsTECH · Pulso ao vivo</div></div>
+          <div class="flex items-center gap-2 text-[13px] text-zinc-400"><span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span> ao vivo · atualiza em tempo real</div>
+        </div>
+        <div class="grid grid-cols-4 gap-5">
+          <div class="tv-tile"><div class="tv-l">MRR</div><div class="tv-n">R$ 184k</div><div class="tv-d text-emerald-400">▲ 4,2% mês</div></div>
+          <div class="tv-tile"><div class="tv-l">Clientes ativos</div><div class="tv-n">38</div><div class="tv-d text-emerald-400">▲ 3 novos</div></div>
+          <div class="tv-tile"><div class="tv-l">Entregas no prazo</div><div class="tv-n">91%</div><div class="tv-d text-zinc-500">meta 95%</div></div>
+          <div class="tv-tile"><div class="tv-l">Em risco</div><div class="tv-n text-rose-300">1</div><div class="tv-d text-rose-300">AgroVerde</div></div>
+        </div>
+        <div class="grid grid-cols-3 gap-5 mt-5">
+          <div class="tv-tile col-span-2">
+            <div class="tv-l mb-4">Receita · últimos 6 meses</div>
+            <div class="flex items-end gap-3 h-40">
+              <div class="bar" style="height:55%"></div><div class="bar" style="height:62%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:68%"></div><div class="bar" style="height:82%"></div><div class="bar" style="height:95%"></div>
+            </div>
+          </div>
+          <div class="tv-tile">
+            <div class="tv-l mb-4">Ranking diretorias</div>
+            <div class="space-y-3 text-[15px]">
+              <div class="flex items-center gap-2"><span class="dotk bg-sky-400"></span>Tech <span class="ml-auto text-white">96%</span></div>
+              <div class="flex items-center gap-2"><span class="dotk bg-rose-400"></span>Comercial <span class="ml-auto text-white">89%</span></div>
+              <div class="flex items-center gap-2"><span class="dotk bg-amber-400"></span>Operacional <span class="ml-auto text-white">85%</span></div>
+              <div class="flex items-center gap-2"><span class="dotk bg-emerald-400"></span>Financeiro <span class="ml-auto text-white">82%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ════════════════ FLOATING VARIANT BAR (só Hub) ════════════════ -->
+<div id="vbar" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 px-1.5 py-1.5 rounded-full bg-ink-700/90 backdrop-blur ring-1 ring-white/10 shadow-2xl text-[13px]">
+  <button onclick="cycle(-1)" class="vbtn">←</button>
+  <div class="px-3 text-zinc-300"><span class="text-zinc-500">Hub:</span> <b id="vlabel" class="text-white">Bento</b></div>
+  <button onclick="cycle(1)" class="vbtn">→</button>
+</div>
+
+<style>
+  .nav-item{display:flex;align-items:center;gap:.6rem;padding:.5rem .65rem;border-radius:.6rem;color:#a1a1aa;cursor:pointer;transition:.15s}
+  .nav-item:hover{background:#141418;color:#e4e4e7}
+  .nav-item.on{background:rgba(124,108,246,.14);color:#fff;box-shadow:inset 0 0 0 1px rgba(124,108,246,.25)}
+  .nav-item span:first-of-type{flex:none}
+  .avatar{height:1.6rem;width:1.6rem;border-radius:999px;display:grid;place-items:center;font-size:10px;font-weight:600;color:#fff;flex:none}
+  .tile{text-align:left;border:1px solid var(--tw-line,rgba(255,255,255,.07));background:rgba(15,15,19,.6);border-radius:1rem;padding:1.1rem;transition:.18s;box-shadow:0 20px 60px -30px rgba(0,0,0,.8)}
+  .tile:hover{transform:translateY(-2px);border-color:rgba(124,108,246,.35);box-shadow:0 0 0 1px rgba(124,108,246,.25),0 16px 50px -20px rgba(124,108,246,.35)}
+  .tile-ic{height:2.2rem;width:2.2rem;border-radius:.7rem;display:grid;place-items:center;font-size:1.05rem;margin-bottom:.7rem}
+  .tile-t{font-weight:600;color:#fff;font-size:14px}
+  .tile-d{color:#a1a1aa;font-size:12px;margin-top:.15rem}
+  .pulse{color:#c4c4cd;border-left:2px solid rgba(255,255,255,.08);padding-left:.7rem;line-height:1.4}
+  .row-h{padding:.6rem 1rem;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#71717a;background:rgba(20,20,24,.5)}
+  .row{width:100%;display:flex;align-items:center;gap:.8rem;padding:.85rem 1rem;text-align:left;transition:.12s;border-bottom:1px solid rgba(255,255,255,.05)}
+  .row:hover{background:rgba(124,108,246,.08)}
+  .row-ic{font-size:1.1rem}.row-t{color:#fff;font-weight:500;font-size:13px}.row-d{color:#71717a;font-size:12px}
+  .kbd{margin-left:auto;font-size:10px;color:#71717a;border:1px solid rgba(255,255,255,.1);border-radius:.3rem;padding:.05rem .35rem}
+  .row-feed{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;font-size:12.5px;color:#d4d4d8;border-bottom:1px solid rgba(255,255,255,.04)}
+  .dot{height:7px;width:7px;border-radius:999px;flex:none}
+  .feedcard{display:flex;gap:.8rem;border:1px solid rgba(255,255,255,.07);background:rgba(15,15,19,.55);border-radius:.9rem;padding:.9rem 1rem}
+  .fc-h{font-size:12px;color:#a1a1aa}.fc-b{font-size:13.5px;color:#d4d4d8;margin-top:.15rem;line-height:1.45}
+  .rail{width:100%;display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border:1px solid rgba(255,255,255,.07);background:rgba(15,15,19,.5);border-radius:.7rem;font-size:13px;color:#e4e4e7;transition:.12s}
+  .rail:hover{border-color:rgba(124,108,246,.35)}
+  .card{border:1px solid rgba(255,255,255,.07);background:rgba(15,15,19,.55);border-radius:.9rem;padding:1rem}
+  .card-h{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#71717a;margin-bottom:.7rem}
+  .pill{font-size:10.5px;padding:.12rem .5rem;border-radius:999px;font-weight:500;white-space:nowrap}
+  .pill-amber{background:rgba(245,158,11,.15);color:#fcd34d}.pill-sky{background:rgba(14,165,233,.15);color:#7dd3fc}
+  .pill-violet{background:rgba(124,108,246,.18);color:#c4b5fd}.pill-emerald{background:rgba(16,185,129,.15);color:#6ee7b7}
+  .pill-rose{background:rgba(244,63,94,.15);color:#fda4af}
+  .nav-sub{padding-left:.85rem;font-size:12.5px}
+  .dotk{height:7px;width:7px;border-radius:999px;flex:none;display:inline-block}
+  /* comunicação */
+  .ch{display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;border-radius:.5rem;color:#a1a1aa;font-size:13px;cursor:pointer;transition:.12s}
+  .ch:hover{background:#141418;color:#e4e4e7}
+  .ch.on{background:rgba(124,108,246,.14);color:#fff}
+  .ment{font-weight:500;border-radius:.3rem;padding:0 .2rem}
+  .ment-cli{color:#c4b5fd;background:rgba(124,108,246,.16)}
+  .ment-user{color:#7dd3fc;background:rgba(14,165,233,.14)}
+  .msg-row{display:flex;gap:.7rem;padding:.45rem .5rem;border-radius:.6rem;transition:.12s}
+  .msg-row:hover{background:rgba(255,255,255,.025)}
+  .msg-row.sub{padding:.3rem .4rem}
+  .card-chip{font-size:10px;color:#c4b5fd;background:rgba(124,108,246,.14);border-radius:.3rem;padding:.05rem .4rem;margin-left:.35rem}
+  .msg-actions{display:flex;gap:.4rem;margin-top:.35rem;opacity:0;transition:.12s}
+  .msg-row.group:hover .msg-actions,.msg-row:hover .msg-actions{opacity:1}
+  .msg-actions button{font-size:11px;color:#a1a1aa;border:1px solid rgba(255,255,255,.08);border-radius:.4rem;padding:.1rem .45rem}
+  .msg-actions button:hover{color:#fff;border-color:rgba(124,108,246,.4)}
+  .thread-toggle{display:block;font-size:12px;color:#7dd3fc;margin-top:.4rem;padding:.2rem 0}
+  .thread{margin:.45rem 0 .2rem;padding-left:.8rem;border-left:2px solid rgba(124,108,246,.25);display:flex;flex-direction:column;gap:.3rem}
+  /* agenda */
+  .ev{border-radius:.4rem;padding:.3rem .45rem;border-left:2px solid}
+  .ev-sky{background:rgba(14,165,233,.1);border-color:#0ea5e9;color:#bae6fd}
+  .ev-rose{background:rgba(244,63,94,.1);border-color:#f43f5e;color:#fecdd3}
+  .ev-violet{background:rgba(124,108,246,.12);border-color:#7c6cf6;color:#ddd6fe}
+  .ev-amber{background:rgba(245,158,11,.1);border-color:#f59e0b;color:#fde68a}
+  .ev-emerald{background:rgba(16,185,129,.1);border-color:#10b981;color:#a7f3d0}
+  /* indicadores */
+  .kpi-top{display:flex;justify-content:space-between;font-size:12.5px;color:#a1a1aa;margin-bottom:.4rem}
+  .prog{height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,#7C6CF6,#A99CFB);border-radius:999px}
+  .kpi-src{font-size:10.5px;color:#52525b;margin-top:.35rem}
+  .card.border-dashed{border-style:dashed}
+  /* tv */
+  .tv-tile{border:1px solid rgba(255,255,255,.08);background:rgba(15,15,19,.6);border-radius:1.1rem;padding:1.4rem 1.5rem;box-shadow:0 20px 60px -30px rgba(0,0,0,.8)}
+  .tv-l{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#71717a}
+  .tv-n{font-family:Newsreader,serif;font-size:2.8rem;line-height:1.05;color:#fff;margin-top:.3rem}
+  .tv-d{font-size:14px;margin-top:.2rem}
+  .pill-soft{font-size:11px;color:#a1a1aa;border:1px solid rgba(255,255,255,.1);padding:.05rem .45rem;border-radius:.4rem}
+  .frente{display:flex;align-items:center;justify-content:space-between;padding:.45rem .6rem;border-radius:.5rem;background:rgba(255,255,255,.02)}
+  .btn-ghost{font-size:13px;padding:.45rem .8rem;border-radius:.6rem;color:#d4d4d8;border:1px solid rgba(255,255,255,.1)}
+  .btn-accent{font-size:13px;padding:.45rem .8rem;border-radius:.6rem;color:#fff;background:#7C6CF6}
+  .tab{font-size:13px;padding:.35rem .7rem;border-radius:.5rem;color:#a1a1aa}
+  .tab-active{font-size:13px;padding:.35rem .7rem;border-radius:.5rem;color:#fff;background:rgba(255,255,255,.06)}
+  .msg{display:flex;gap:.7rem}.msg-h{font-size:12px;font-weight:600;color:#e4e4e7}.msg-h span{color:#71717a;font-weight:400}
+  .msg-b{font-size:13px;color:#c4c4cd;margin-top:.1rem;line-height:1.45}
+  .tl{display:flex;gap:.8rem;align-items:flex-start;padding-left:.2rem}
+  .tl-dot{height:8px;width:8px;border-radius:999px;margin-top:.45rem;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.03)}
+  .tl-b{font-size:13px;color:#d4d4d8}.tl-t{font-size:11px;color:#71717a;margin-top:.1rem}
+  .stat{text-align:center;padding:.5rem .9rem;border:1px solid rgba(255,255,255,.07);border-radius:.7rem;background:rgba(15,15,19,.5)}
+  .stat-n{font-size:1.3rem;font-family:Newsreader,serif;color:#fff}.stat-l{font-size:10.5px;color:#71717a}
+  .bar{flex:1;background:linear-gradient(180deg,#7C6CF6,#5B4DD6);border-radius:.25rem .25rem 0 0;opacity:.8}
+  .kcol{background:rgba(11,11,14,.5);border:1px solid rgba(255,255,255,.06);border-radius:.9rem;padding:.7rem}
+  .kcol-h{display:flex;justify-content:space-between;font-size:12px;color:#a1a1aa;padding:.2rem .4rem .6rem;font-weight:500}
+  .kcol-h span{color:#52525b}
+  .kcard{background:rgba(20,20,24,.8);border:1px solid rgba(255,255,255,.06);border-radius:.6rem;padding:.7rem;margin-bottom:.5rem;cursor:grab;transition:.12s}
+  .kcard:hover{border-color:rgba(124,108,246,.3)}
+  .kc-t{font-size:13px;color:#e4e4e7}.kc-d{font-size:11px;color:#fca5a5;margin-top:.2rem}
+  .kc-m{display:flex;align-items:center;justify-content:space-between;margin-top:.6rem}
+  .vbtn{height:1.9rem;width:1.9rem;border-radius:999px;color:#d4d4d8;display:grid;place-items:center}
+  .vbtn:hover{background:rgba(255,255,255,.1);color:#fff}
+  .cli-row{width:100%;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:.5rem;align-items:center;padding:.85rem 1rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.05);transition:.12s}
+  .cli-row:hover{background:rgba(124,108,246,.07)}
+  .cli-row .col-span-4{grid-column:span 4}.cli-row .col-span-3{grid-column:span 3}.cli-row .col-span-2{grid-column:span 2}.cli-row .col-span-1{grid-column:span 1}
+  .cli-ic{height:2.1rem;width:2.1rem;border-radius:.6rem;display:grid;place-items:center;font-size:1rem;flex:none}
+  .cli-n{font-size:13.5px;color:#fff;font-weight:500}.cli-s{font-size:11px;color:#71717a}
+  .kcol.border-dashed{border-style:dashed}
+</style>
+
+<script>
+  const screens = ['hub','clientes','cliente','pessoa','kanban','comunicacao','agenda','indicadores','tv'];
+  const navMap = { hub:'hub', clientes:'clientes', cliente:'clientes', pessoa:'pessoas', kanban:'projetos', comunicacao:'comunicacao', agenda:'agenda', indicadores:'indicadores', tv:'tv' };
+  function go(s){
+    document.querySelectorAll('[data-screen]').forEach(e=>e.classList.toggle('active', e.dataset.screen===s));
+    document.querySelectorAll('[data-nav]').forEach(e=>e.classList.toggle('on', e.dataset.nav===navMap[s]));
+    document.getElementById('vbar').style.display = s==='hub' ? 'flex' : 'none';
+    window.scrollTo(0,0);
+  }
+  // hub variants
+  const variants = [['bento','Bento'],['list','Linear-list'],['feed','Feed-first']];
+  function setVariant(key){
+    document.querySelectorAll('.hub-variant').forEach(e=>e.classList.toggle('hidden', e.dataset.variant!==key));
+    document.getElementById('vlabel').textContent = (variants.find(v=>v[0]===key)||variants[0])[1];
+    const u=new URL(location); u.searchParams.set('variant',key); history.replaceState(null,'',u);
+  }
+  function cycle(d){
+    const cur=new URL(location).searchParams.get('variant')||'bento';
+    let i=variants.findIndex(v=>v[0]===cur); i=(i+d+variants.length)%variants.length;
+    setVariant(variants[i][0]);
+  }
+  document.addEventListener('keydown',e=>{
+    if(['INPUT','TEXTAREA'].includes(e.target.tagName)||e.target.isContentEditable) return;
+    if(document.querySelector('[data-screen="hub"]').classList.contains('active')){
+      if(e.key==='ArrowLeft')cycle(-1); if(e.key==='ArrowRight')cycle(1);
+    }
+  });
+  // ── Kanban POR DIRETOR — cada dono tem board próprio + COLUNAS custom (da porta p/ dentro) ──
+  const av = (bg,i)=>`<div class="avatar ${bg}">${i}</div>`;
+  const boards = {
+    comercial: { title:'Comercial · Marina', dot:'bg-rose-400', hint:'gestão de contas ativas — etapas definidas pela Marina', cols:[
+      {n:'Contas ativas', cards:[{t:'Loja Norte', a:av('bg-rose-500','MC')},{t:'AgroVerde', a:av('bg-violet-500','LP')}]},
+      {n:'Upsell', cards:[{t:'Nova frente — Studio Belle', a:av('bg-amber-500','JO')}]},
+      {n:'Renovação', hot:true, cards:[{t:'Contrato Clínica Vitalis', d:'vence em 12d', a:av('bg-rose-500','MC')}]},
+      {n:'Em risco', cards:[{t:'Escritório Lemos · NPS baixo'}]},
+      {n:'Renovado', done:true, cards:[{t:'AgroVerde 2025'}]},
+    ]},
+    tech: { title:'Tech · Rafael', dot:'bg-sky-400', hint:'sprint de entregas — etapas definidas pelo Rafael', cols:[
+      {n:'Backlog', cards:[{t:'Mapear jornada CRM'},{t:'Refactor auth'}]},
+      {n:'Doing', hot:true, cards:[{t:'Integração CRM Loja Norte', a:av('bg-sky-500','RT')}]},
+      {n:'Code review', cards:[{t:'PR #142 — webhook'}]},
+      {n:'QA', cards:[{t:'Testar fluxo proposta'}]},
+      {n:'Deploy', done:true, cards:[{t:'Setup ambiente CRM'}]},
+    ]},
+    ops: { title:'Operacional · João', dot:'bg-amber-400', hint:'entregas operacionais — etapas definidas pelo João', cols:[
+      {n:'A planejar', cards:[{t:'Cronograma campanha Q3'}]},
+      {n:'Em execução', hot:true, cards:[{t:'Produção peças — Studio Belle', a:av('bg-amber-500','JO')},{t:'Setup CRM — Loja Norte'}]},
+      {n:'Aprovação cliente', cards:[{t:'Layouts AgroVerde', a:av('bg-violet-500','LP')}]},
+      {n:'Entregue', done:true, cards:[{t:'Kickoff Clínica Vitalis'}]},
+    ]},
+    financeiro: { title:'Financeiro · Paula', dot:'bg-emerald-400', hint:'faturamento & cobrança — etapas definidas pela Paula', cols:[
+      {n:'A faturar', cards:[{t:'NF Clínica Vitalis · R$18k'},{t:'NF Loja Norte · R$12k'}]},
+      {n:'Enviado', cards:[{t:'Boleto AgroVerde', a:av('bg-emerald-500','PF')}]},
+      {n:'Em atraso', hot:true, cards:[{t:'Escritório Lemos', d:'+15 dias', a:av('bg-emerald-500','PF')}]},
+      {n:'Pago', done:true, cards:[{t:'Studio Belle · jun'}]},
+    ]},
+    people: { title:'People · Lara', dot:'bg-violet-400', hint:'recrutamento & cultura — etapas definidas pela Lara', cols:[
+      {n:'Triagem', cards:[{t:'12 currículos · vaga Dev'},{t:'Vaga Designer'}]},
+      {n:'Entrevistas', cards:[{t:'Entrevista — Bruno', a:av('bg-sky-500','RT')}]},
+      {n:'Teste técnico', hot:true, cards:[{t:'Case — Júlia', d:'avaliar até sex'}]},
+      {n:'Proposta', cards:[{t:'Oferta — Caio'}]},
+      {n:'Onboarding', done:true, cards:[{t:'Integração — Ana'}]},
+    ]},
+  };
+  function renderBoard(owner){
+    const b = boards[owner];
+    document.getElementById('boardTitle').textContent = 'Kanban · '+b.title.split(' · ')[0];
+    document.getElementById('boardHint').textContent = b.hint;
+    document.getElementById('boardDot').className = 'dotk '+b.dot+' !h-2.5 !w-2.5';
+    const grid = document.getElementById('boardCols');
+    grid.style.gridTemplateColumns = `repeat(${b.cols.length+1},minmax(0,1fr))`;
+    grid.innerHTML = b.cols.map(c=>`
+      <div class="kcol"><div class="kcol-h">${c.n} <span>${c.cards.length}</span></div>
+        ${c.cards.map(k=>`<div class="kcard ${c.hot?'ring-1 ring-accent/30':''} ${c.done?'opacity-70':''}">
+          <div class="kc-t ${c.done?'line-through decoration-zinc-600':''}">${k.t}</div>
+          ${k.d?`<div class="kc-d">${k.d}</div>`:''}
+          ${k.a?`<div class="kc-m"><span></span>${k.a}</div>`:''}
+        </div>`).join('')}
+        <button class="w-full text-left text-[12px] text-zinc-600 hover:text-zinc-400 px-1.5 py-1">+ tarefa</button>
+      </div>`).join('') + `
+      <button class="kcol border-dashed grid place-items-center text-zinc-600 hover:text-accent-soft hover:border-accent/40 text-[13px] min-h-[120px]">+ etapa</button>`;
+  }
+  function openBoard(owner){
+    renderBoard(owner); go('kanban');
+    document.querySelectorAll('[data-nav]').forEach(e=>e.classList.toggle('on', e.dataset.nav==='kb-'+owner));
+  }
+
+  // ── Clientes: toggle Tabela / Board (board = estágio de ENTREGA, pós-venda) ──
+  function cliView(v){
+    document.getElementById('cli-tabela').classList.toggle('hidden', v!=='tabela');
+    document.getElementById('cli-board').classList.toggle('hidden', v!=='board');
+    document.querySelectorAll('[data-cliview]').forEach(b=>{
+      const on=b.dataset.cliview===v;
+      b.className='px-2.5 py-1 rounded-md '+(on?'bg-white/[.06] text-white':'text-zinc-500');
+    });
+  }
+
+  setVariant(new URL(location).searchParams.get('variant')||'feed'); // DECIDIDO: Feed-first
+  renderBoard('comercial');
+  go('hub');
+</script>
+</body>
+</html>

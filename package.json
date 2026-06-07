@@ -1,0 +1,27 @@
+{
+  "name": "internov2",
+  "private": true,
+  "description": "Sistema Interno MilennialsTECH — monolito modular (NestJS + Prisma + Vite)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "clean": "turbo clean",
+    "db:migrate": "npm run db:migrate -w @interno/api",
+    "db:studio": "npm run db:studio -w @interno/api",
+    "db:generate": "npm run db:generate -w @interno/api"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "npm@10.9.0"
+}

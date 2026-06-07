@@ -57,6 +57,24 @@ export interface KpiAtualizadoEvento {
   donoId?: string | null;
 }
 
+// Evento de agenda criado. Carrega o necessário p/ o feed (cliente vinculado vira Atividade no card).
+export interface EventoCriadoEvento {
+  eventoId: string;
+  criadorId: string;
+  clienteId?: string | null;
+  titulo: string;
+  inicio: string; // ISO
+}
+
+// Lembrete disparou para o início de uma ocorrência: notifica os participantes in-app.
+export interface LembreteDisparadoEvento {
+  eventoId: string;
+  lembreteId: string;
+  titulo: string;
+  ocorrenciaInicio: string; // ISO
+  participantesIds: string[];
+}
+
 // Item normalizado do feed de atividades (alimenta card do cliente E visão por pessoa).
 export interface AtividadeFeedItem {
   tipo: TipoAtividade;

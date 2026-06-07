@@ -5,6 +5,7 @@ import {
   MencaoCriadaEvento,
   ClienteEstagioAlteradoEvento,
   TarefaAtribuidaEvento,
+  EventoCriadoEvento,
   TipoAtividade,
   TipoMencao,
 } from '@interno/shared';
@@ -37,6 +38,20 @@ export class AtividadesListener {
       clienteId: e.clienteId,
       resumo: `Estágio de entrega → ${e.estagio}`,
       payload: { estagio: e.estagio },
+    });
+  }
+
+  // Evento de agenda vinculado a cliente vira histórico no card (ator=criador, alvo=cliente).
+  @OnEvent(EVENTOS.EVENTO_CRIADO)
+  aoCriarEvento(e: EventoCriadoEvento) {
+    if (!e.clienteId) return; // só evento com cliente entra no card
+    return this.atividades.registrar({
+      tipo: TipoAtividade.EVENTO,
+      atorId: e.criadorId,
+      clienteId: e.clienteId,
+      eventoId: e.eventoId,
+      resumo: e.titulo,
+      payload: { inicio: e.inicio },
     });
   }
 

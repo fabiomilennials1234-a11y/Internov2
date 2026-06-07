@@ -85,6 +85,13 @@ enum TipoAtividade {
   PROJETO
 }
 
+enum StatusParticipante {
+  CONVIDADO
+  ACEITO
+  RECUSADO
+  TALVEZ
+}
+
 enum TipoMacro {
   TEMPLATE_MSG
   ACAO_RAPIDA
@@ -265,8 +272,13 @@ model EventoAgenda {
   id          String   @id @default(cuid())
   titulo      String
   descricao   String?
+  local       String?  // texto livre: sala ("Sala 2") ou URL de reunião (Meet/Zoom)
   inicio      DateTime
   fim         DateTime
+  diaInteiro  Boolean  @default(false)
+  // Recorrência: regra RRULE (RFC 5545) no evento-mãe; ocorrências expandidas na consulta. Ver docs/adr/0001.
+  rrule          String?
+  recorrenciaFim DateTime?
   criadorId   String
   criador     Usuario  @relation("CriadorEvento", fields: [criadorId], references: [id])
   clienteId   String?
@@ -275,6 +287,7 @@ model EventoAgenda {
 
   participantes ParticipanteEvento[]
   lembretes     Lembrete[]
+  excecoes      ExcecaoEvento[]
 
   @@index([inicio])
   @@index([clienteId])
@@ -282,21 +295,45 @@ model EventoAgenda {
 
 model ParticipanteEvento {
   eventoId  String
-  evento    EventoAgenda @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  evento    EventoAgenda       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
   usuarioId String
-  usuario   Usuario      @relation(fields: [usuarioId], references: [id])
+  usuario   Usuario            @relation(fields: [usuarioId], references: [id])
+  status    StatusParticipante @default(CONVIDADO)
 
   @@id([eventoId, usuarioId])
 }
 
-model Lembrete {
-  id         String       @id @default(cuid())
-  eventoId   String
-  evento     EventoAgenda @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  dispararEm DateTime
-  enviado    Boolean      @default(false)
+// Desvio de uma ocorrência específica de série recorrente: cancelada ou (fase 2) com campos sobrescritos.
+model ExcecaoEvento {
+  id           String       @id @default(cuid())
+  eventoId     String
+  evento       EventoAgenda @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  dataOriginal DateTime // o início da ocorrência na série antes do desvio
+  cancelado    Boolean  @default(true)
 
-  @@index([dispararEm])
+  @@unique([eventoId, dataOriginal])
+}
+
+// Preferência de lembrete de um evento: "X minutos antes". Vale p/ todas as ocorrências da série.
+model Lembrete {
+  id           String              @id @default(cuid())
+  eventoId     String
+  evento       EventoAgenda        @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  minutosAntes Int
+  disparos     LembreteDisparado[]
+
+  @@unique([eventoId, minutosAntes])
+}
+
+// Ledger de idempotência: marca que um Lembrete já disparou para o início de uma ocorrência específica.
+model LembreteDisparado {
+  id              String   @id @default(cuid())
+  lembreteId      String
+  lembrete        Lembrete @relation(fields: [lembreteId], references: [id], onDelete: Cascade)
+  ocorrenciaInicio DateTime
+  enviadoEm       DateTime @default(now())
+
+  @@unique([lembreteId, ocorrenciaInicio])
 }
 
 // ───────────────────────── [indicadores] OKR/KPI ─────────────────────────

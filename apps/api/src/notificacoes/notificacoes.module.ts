@@ -4,6 +4,7 @@ import {
   EVENTOS,
   MencaoCriadaEvento,
   TarefaAtribuidaEvento,
+  LembreteDisparadoEvento,
   TipoMencao,
 } from '@interno/shared';
 import { PrismaService } from '../prisma';
@@ -41,6 +42,20 @@ export class NotificacoesService {
   @OnEvent(EVENTOS.TAREFA_ATRIBUIDA)
   aoAtribuir(e: TarefaAtribuidaEvento) {
     return this.notificar(e.responsavelId, 'tarefa', { tarefaId: e.tarefaId, boardId: e.boardId });
+  }
+
+  // Lembrete de evento: notifica cada participante in-app (sino).
+  @OnEvent(EVENTOS.LEMBRETE_DISPARADO)
+  async aoDispararLembrete(e: LembreteDisparadoEvento) {
+    await Promise.all(
+      e.participantesIds.map((destinatarioId) =>
+        this.notificar(destinatarioId, 'lembrete', {
+          eventoId: e.eventoId,
+          titulo: e.titulo,
+          ocorrenciaInicio: e.ocorrenciaInicio,
+        }),
+      ),
+    );
   }
 }
 

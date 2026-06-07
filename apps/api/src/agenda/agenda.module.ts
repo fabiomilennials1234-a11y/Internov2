@@ -1,15 +1,43 @@
-import { Body, Controller, Get, Module, Post, Query, UseGuards } from '@nestjs/common';
-import { IsArray, IsDateString, IsOptional, IsString } from 'class-validator';
-import { AgendaService } from './agenda.service';
+import { Body, Controller, Delete, Get, Module, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
+import { IsArray, IsBoolean, IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { AgendaService, EntradaEvento, FILA_AGENDA } from './agenda.service';
+import { AgendaProcessor, AgendaScheduler } from './agenda.processor';
 import { JwtAuthGuard, UsuarioAtual } from '../auth';
 import type { UsuarioAutenticado } from '../auth';
 
-class CriarEventoDto {
+class EventoDto {
   @IsString() titulo!: string;
+  @IsOptional() @IsString() descricao?: string;
+  @IsOptional() @IsString() local?: string;
   @IsDateString() inicio!: string;
   @IsDateString() fim!: string;
+  @IsOptional() @IsBoolean() diaInteiro?: boolean;
+  @IsOptional() @IsString() rrule?: string;
+  @IsOptional() @IsDateString() recorrenciaFim?: string;
   @IsOptional() @IsString() clienteId?: string;
   @IsOptional() @IsArray() participantes?: string[];
+  @IsOptional() @IsArray() @IsInt({ each: true }) @Min(0, { each: true }) lembretes?: number[];
+}
+
+class CancelarOcorrenciaDto {
+  @IsDateString() dataOriginal!: string;
+}
+
+function paraEntrada(dto: EventoDto): EntradaEvento {
+  return {
+    titulo: dto.titulo,
+    descricao: dto.descricao,
+    local: dto.local,
+    inicio: new Date(dto.inicio),
+    fim: new Date(dto.fim),
+    diaInteiro: dto.diaInteiro,
+    rrule: dto.rrule ?? null,
+    recorrenciaFim: dto.recorrenciaFim ? new Date(dto.recorrenciaFim) : null,
+    clienteId: dto.clienteId,
+    participantes: dto.participantes,
+    lembretes: dto.lembretes,
+  };
 }
 
 @UseGuards(JwtAuthGuard)
@@ -17,28 +45,38 @@ class CriarEventoDto {
 class AgendaController {
   constructor(private readonly agenda: AgendaService) {}
 
-  // Sem usuarioId = agenda de TODOS (diretoria vê tudo).
+  // Sem usuarioId = agenda de TODOS (diretoria vê tudo). Retorna OCORRÊNCIAS (séries expandidas).
   @Get('eventos')
   eventos(@Query('de') de: string, @Query('ate') ate: string, @Query('usuarioId') usuarioId?: string) {
-    return this.agenda.eventos_(new Date(de), new Date(ate), usuarioId);
+    return this.agenda.ocorrencias(new Date(de), new Date(ate), usuarioId);
   }
 
   @Post('eventos')
-  criar(@Body() dto: CriarEventoDto, @UsuarioAtual() u: UsuarioAutenticado) {
-    return this.agenda.criar({
-      titulo: dto.titulo,
-      inicio: new Date(dto.inicio),
-      fim: new Date(dto.fim),
-      criadorId: u.id,
-      clienteId: dto.clienteId,
-      participantes: dto.participantes ?? [u.id],
-    });
+  criar(@Body() dto: EventoDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.agenda.criar({ ...paraEntrada(dto), criadorId: u.id });
+  }
+
+  @Patch('eventos/:id')
+  editar(@Param('id') id: string, @Body() dto: EventoDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.agenda.editar(id, u, paraEntrada(dto));
+  }
+
+  @Delete('eventos/:id')
+  excluir(@Param('id') id: string, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.agenda.excluir(id, u);
+  }
+
+  // Cancela uma ocorrência específica de série recorrente.
+  @Post('eventos/:id/cancelar-ocorrencia')
+  cancelarOcorrencia(@Param('id') id: string, @Body() dto: CancelarOcorrenciaDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.agenda.cancelarOcorrencia(id, u, new Date(dto.dataOriginal));
   }
 }
 
 @Module({
+  imports: [BullModule.registerQueue({ name: FILA_AGENDA })],
   controllers: [AgendaController],
-  providers: [AgendaService],
+  providers: [AgendaService, AgendaProcessor, AgendaScheduler],
   exports: [AgendaService],
 })
 export class AgendaModule {}

@@ -95,3 +95,11 @@ export const TipoMacro = {
   AUTOMACAO: 'AUTOMACAO',
 } as const;
 export type TipoMacro = (typeof TipoMacro)[keyof typeof TipoMacro];
+
+export const StatusParticipante = {
+  CONVIDADO: 'CONVIDADO',
+  ACEITO: 'ACEITO',
+  RECUSADO: 'RECUSADO',
+  TALVEZ: 'TALVEZ',
+} as const;
+export type StatusParticipante = (typeof StatusParticipante)[keyof typeof StatusParticipante];

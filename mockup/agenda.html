@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agenda · mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: { 950: '#08080a', 900: '#0b0b0e', 850: '#0f0f13', 800: '#141418', 700: '#1b1b21' },
+          accent: { DEFAULT: '#7c6cf6', soft: '#a99cfb', deep: '#5b4dd6' },
+        },
+        fontFamily: { sans: ['Inter', 'system-ui'], serif: ['Newsreader', 'Georgia'] },
+      },
+    },
+  };
+</script>
+<style>
+  body { background:#08080a; color:#e4e4e7; font-family:Inter,system-ui; }
+  ::selection { background: rgba(124,108,246,.35); }
+  ::-webkit-scrollbar { width:9px; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08); border-radius:9px; }
+</style>
+</head>
+<body>
+<div class="max-w-[1280px] mx-auto px-8 py-7">
+  <!-- header -->
+  <div class="flex items-end justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="font-serif text-[28px] text-white leading-none">Agenda</h1>
+      <p class="text-[13px] text-zinc-400 mt-1.5">Calendário da empresa · <span id="periodo">9–15 Junho</span></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="flex rounded-lg bg-ink-800 border border-white/[0.07] p-0.5" id="switcher">
+        <button data-v="mes" class="px-3 py-1 rounded-md text-[12.5px] text-zinc-400 hover:text-zinc-200">Mês</button>
+        <button data-v="semana" class="px-3 py-1 rounded-md text-[12.5px] bg-accent text-white">semana</button>
+        <button data-v="dia" class="px-3 py-1 rounded-md text-[12.5px] text-zinc-400 hover:text-zinc-200">dia</button>
+      </div>
+      <button class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-white/[0.07] text-[13px]">←</button>
+      <button class="px-3 py-1.5 rounded-lg bg-ink-800 border border-white/[0.07] text-[13px]">Hoje</button>
+      <button class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-white/[0.07] text-[13px]">→</button>
+      <select class="bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[13px] text-zinc-300">
+        <option>Todos</option><option>Gabriel</option><option>Marina</option><option>Rafael</option>
+      </select>
+      <button onclick="abrirForm()" class="bg-accent hover:bg-accent-deep text-white rounded-lg px-3 py-1.5 text-[13px]">+ Evento</button>
+    </div>
+  </div>
+
+  <div class="mt-6" id="vistaSemana"></div>
+  <div class="mt-6 hidden" id="vistaMes"></div>
+</div>
+
+<!-- modal detalhe -->
+<div id="detalhe" class="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4 hidden" onclick="fechar('detalhe')">
+  <div class="w-[440px] max-w-full rounded-2xl border border-white/[0.08] bg-ink-850 p-6" onclick="event.stopPropagation()">
+    <div class="flex items-start gap-3">
+      <div class="mt-1 h-3 w-3 rounded-full bg-accent shrink-0"></div>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-serif text-xl text-white leading-tight">Reunião semanal · Acme</h2>
+        <p class="text-[13px] text-zinc-400 mt-1">10:00 – 11:00 · segunda-feira, 09 de junho</p>
+        <p class="text-[12px] text-accent-soft mt-0.5">↻ Toda semana</p>
+      </div>
+    </div>
+    <div class="mt-4 space-y-2.5 text-[13px]">
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Local</span><a class="text-accent-soft hover:underline">Entrar na reunião</a></div>
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Cliente</span><span>Acme Corp</span></div>
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Notas</span><span>Revisar entregáveis do sprint e roadmap.</span></div>
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Pessoas</span>
+        <div class="flex flex-wrap gap-1">
+          <span class="inline-flex items-center gap-1 text-[12px] bg-ink-800 rounded-full pl-0.5 pr-2 py-0.5"><span class="h-4 w-4 rounded-full grid place-items-center text-[8px] text-white" style="background:#7c6cf6">G</span>Gabriel</span>
+          <span class="inline-flex items-center gap-1 text-[12px] bg-ink-800 rounded-full pl-0.5 pr-2 py-0.5"><span class="h-4 w-4 rounded-full grid place-items-center text-[8px] text-white" style="background:#e0719c">M</span>Marina</span>
+        </div>
+      </div>
+      <div class="flex gap-2 text-zinc-300"><span class="text-zinc-500 w-16 shrink-0">Lembrete</span><span>10 min · 1 dia</span></div>
+    </div>
+    <div class="flex justify-between items-center gap-2 mt-6">
+      <button class="text-[12.5px] text-zinc-400 hover:text-zinc-200">Cancelar esta ocorrência</button>
+      <div class="flex gap-2">
+        <button class="px-3 py-1.5 rounded-lg text-[13px] text-red-300/80 border border-red-400/20 hover:bg-red-500/10">Excluir</button>
+        <button onclick="fechar('detalhe');abrirForm()" class="px-3 py-1.5 rounded-lg text-[13px] text-white bg-accent hover:bg-accent-deep">Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- modal form -->
+<div id="form" class="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4 overflow-y-auto hidden" onclick="fechar('form')">
+  <div class="w-[460px] max-w-full rounded-2xl border border-white/[0.08] bg-ink-850 p-6 my-8" onclick="event.stopPropagation()">
+    <h2 class="font-serif text-xl text-white mb-4">Novo evento</h2>
+    <input placeholder="Título" class="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[14px] mb-3 outline-none focus:border-accent/50" />
+    <label class="flex items-center gap-2 text-[13px] text-zinc-300 mb-2 select-none"><input type="checkbox" class="accent-accent" /> Dia inteiro</label>
+    <div class="flex gap-2 mb-3">
+      <input type="date" value="2025-06-09" class="flex-1 bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px]" />
+      <input type="time" value="10:00" class="bg-ink-800 border border-white/[0.07] rounded-lg px-2 py-2 text-[13px]" />
+      <input type="time" value="11:00" class="bg-ink-800 border border-white/[0.07] rounded-lg px-2 py-2 text-[13px]" />
+    </div>
+    <div class="flex gap-2 mb-2 items-center">
+      <span class="text-[11px] uppercase tracking-wider text-zinc-500 w-20">Repete</span>
+      <select class="flex-1 bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[13px]"><option>Semanalmente</option><option>Não repete</option><option>Diariamente</option><option>Mensalmente</option></select>
+    </div>
+    <div class="flex gap-1 mb-2 pl-[88px]">
+      <button class="h-7 w-7 rounded-full text-[11px] bg-accent text-white">S</button>
+      <button class="h-7 w-7 rounded-full text-[11px] bg-ink-800 text-zinc-400 border border-white/[0.07]">T</button>
+      <button class="h-7 w-7 rounded-full text-[11px] bg-accent text-white">Q</button>
+      <button class="h-7 w-7 rounded-full text-[11px] bg-ink-800 text-zinc-400 border border-white/[0.07]">Q</button>
+      <button class="h-7 w-7 rounded-full text-[11px] bg-ink-800 text-zinc-400 border border-white/[0.07]">S</button>
+      <button class="h-7 w-7 rounded-full text-[11px] bg-ink-800 text-zinc-400 border border-white/[0.07]">S</button>
+      <button class="h-7 w-7 rounded-full text-[11px] bg-ink-800 text-zinc-400 border border-white/[0.07]">D</button>
+    </div>
+    <div class="flex gap-2 mb-3 items-center pl-[88px]">
+      <span class="text-[12px] text-zinc-500">até</span>
+      <input type="date" class="bg-ink-800 border border-white/[0.07] rounded-lg px-2 py-1.5 text-[12px]" />
+      <span class="text-[11px] text-zinc-600">(vazio = sem fim)</span>
+    </div>
+    <input placeholder="Local ou link da reunião" class="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px] mb-3 outline-none" />
+    <textarea placeholder="Notas" rows="2" class="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px] mb-3 outline-none resize-none"></textarea>
+    <select class="w-full bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-2 text-[13px] mb-3"><option>Sem cliente vinculado</option><option>Acme Corp</option></select>
+    <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-1.5">Lembrete</div>
+    <div class="flex gap-1.5 flex-wrap mb-3">
+      <button class="text-[11px] px-2 py-0.5 rounded-full border border-white/[0.08] text-zinc-500">Na hora</button>
+      <button class="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-soft border border-accent/40">10 min</button>
+      <button class="text-[11px] px-2 py-0.5 rounded-full border border-white/[0.08] text-zinc-500">30 min</button>
+      <button class="text-[11px] px-2 py-0.5 rounded-full border border-white/[0.08] text-zinc-500">1 hora</button>
+      <button class="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-soft border border-accent/40">1 dia</button>
+    </div>
+    <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-1.5">Participantes</div>
+    <div class="flex gap-1.5 flex-wrap mb-4">
+      <button class="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-soft border border-accent/40">Gabriel</button>
+      <button class="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent-soft border border-accent/40">Marina</button>
+      <button class="text-[11px] px-2 py-0.5 rounded-full border border-white/[0.08] text-zinc-500">Rafael</button>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button onclick="fechar('form')" class="px-3 py-1.5 rounded-lg text-[13px] text-zinc-400 border border-white/[0.08]">Cancelar</button>
+      <button onclick="fechar('form')" class="px-3 py-1.5 rounded-lg text-[13px] text-white bg-accent hover:bg-accent-deep">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  const DATAS = [9,10,11,12,13,14,15];
+  const HOJE = 1; // índice "hoje" = terça
+  const ALTURA = 48;
+  // eventos fake da semana: {dia, ini, fim(h decimal), titulo, cliente, lane, lanes, diaInteiro}
+  const EVS = [
+    { dia:0, ini:10, fim:11, t:'Reunião semanal · Acme', c:'Acme', lane:0, lanes:1 },
+    { dia:0, ini:14, fim:15.5, t:'1:1 Marina', c:null, lane:0, lanes:1 },
+    { dia:1, ini:9, fim:10, t:'Daily', c:null, lane:0, lanes:2 },
+    { dia:1, ini:9.5, fim:11, t:'Review CRM', c:'Nuvm', lane:1, lanes:2 },
+    { dia:1, ini:13, fim:14, t:'Almoço cliente', c:'Beta', lane:0, lanes:1 },
+    { dia:2, ini:11, fim:12, t:'Planning Vendas', c:null, lane:0, lanes:1 },
+    { dia:2, ini:16, fim:17, t:'Onboarding Delta', c:'Delta', lane:0, lanes:1 },
+    { dia:3, ini:10, fim:11.5, t:'Campanha Q3', c:'Acme', lane:0, lanes:1 },
+    { dia:4, ini:15, fim:16, t:'Retro semana', c:null, lane:0, lanes:1 },
+  ];
+  const ALLDAY = [{ dia:3, t:'Feriado regional' }];
+
+  function corDia(i){ return i===HOJE; }
+  function gradeSemana(){
+    let head = '<div class="grid border-b border-white/[0.06]" style="grid-template-columns:56px repeat(7,1fr)"><div></div>';
+    DIAS.forEach((d,i)=>{ head += `<div class="px-2 py-2 text-center border-l border-white/[0.05] ${corDia(i)?'bg-accent/[0.06]':''}"><div class="text-[10.5px] uppercase tracking-wider text-zinc-500">${d}</div><div class="text-[15px] mt-0.5 ${corDia(i)?'text-accent-soft font-medium':'text-zinc-300'}">${DATAS[i]}</div></div>`; });
+    head += '</div>';
+
+    let horas = '';
+    for(let h=0;h<24;h++) horas += `<div style="height:${ALTURA}px" class="relative"><span class="absolute -top-1.5 right-2 text-[10px] text-zinc-600">${String(h).padStart(2,'0')}:00</span></div>`;
+
+    let cols = '';
+    for(let dia=0;dia<7;dia++){
+      let alldayHtml = ALLDAY.filter(a=>a.dia===dia).map(a=>`<button onclick="abrir('detalhe')" class="block w-full text-left rounded bg-accent/25 text-accent-soft text-[10.5px] px-1.5 py-0.5 truncate mb-0.5">${a.t}</button>`).join('');
+      let slots = '';
+      for(let h=0;h<24;h++) slots += `<div style="height:${ALTURA}px" class="border-t border-white/[0.04] hover:bg-white/[0.02] cursor-pointer" onclick="abrirForm()"></div>`;
+      let evs = EVS.filter(e=>e.dia===dia).map(e=>{
+        const top=e.ini*ALTURA, h=Math.max(18,(e.fim-e.ini)*ALTURA), w=100/e.lanes, left=e.lane*w;
+        return `<button onclick="event.stopPropagation();abrir('detalhe')" class="absolute rounded-md bg-ink-800 border-l-2 border-accent px-1.5 py-1 text-left overflow-hidden hover:bg-ink-700 transition shadow-sm" style="top:${top}px;height:${h}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px)"><div class="text-[11px] text-zinc-100 leading-tight truncate">${e.t}</div><div class="text-[9.5px] text-zinc-500 truncate">${String(Math.floor(e.ini)).padStart(2,'0')}:${e.ini%1?'30':'00'}${e.c?' · '+e.c:''}</div></button>`;
+      }).join('');
+      cols += `<div class="relative border-l border-white/[0.05] ${corDia(dia)?'bg-accent/[0.03]':''}"><div class="absolute top-0 inset-x-0.5 z-20 p-0.5">${alldayHtml}</div>${slots}${evs}</div>`;
+    }
+
+    return `<div class="rounded-2xl border border-white/[0.07] bg-ink-850/60 overflow-hidden">${head}<div class="overflow-y-auto" style="max-height:62vh" id="scrollBody"><div class="grid relative" style="grid-template-columns:56px repeat(7,1fr)"><div class="relative">${horas}</div>${cols}</div></div></div>`;
+  }
+
+  function gradeMes(){
+    let cells='';
+    const offset=6; // 1º junho cai num domingo de exemplo -> começa grade
+    for(let i=0;i<42;i++){
+      const num=i-offset+1; const doMes=num>=1&&num<=30; const dnum=doMes?num:(num<1?(31+num):(num-30));
+      const ehHoje=num===10;
+      const evs = num%4===0?2:num%3===0?1:0;
+      let chips='';
+      for(let k=0;k<evs;k++) chips+=`<button onclick="abrir('detalhe')" class="block w-full text-left rounded bg-ink-800 border-l-2 border-accent px-1 py-0.5 text-[10px] text-zinc-200 truncate hover:bg-ink-700 mb-0.5"><span class="text-zinc-500">10:00 </span>Evento ${k+1}</button>`;
+      cells+=`<div class="bg-ink-850/60 min-h-[96px] p-1.5 ${doMes?'':'opacity-40'} ${ehHoje?'bg-accent/[0.05]':''}"><button class="text-[11.5px] mb-1 px-1 rounded ${ehHoje?'text-accent-soft font-medium':'text-zinc-400'} hover:text-white">${dnum}</button><div>${chips}</div></div>`;
+    }
+    let head=DIAS.map(d=>`<div class="px-2 py-2 text-[10.5px] uppercase tracking-wider text-zinc-500 text-center">${d}</div>`).join('');
+    return `<div class="rounded-2xl border border-white/[0.07] overflow-hidden"><div class="grid grid-cols-7 bg-ink-850/80 border-b border-white/[0.06]">${head}</div><div class="grid grid-cols-7 grid-rows-6 bg-white/[0.05] gap-px">${cells}</div></div>`;
+  }
+
+  document.getElementById('vistaSemana').innerHTML = gradeSemana();
+  document.getElementById('vistaMes').innerHTML = gradeMes();
+  setTimeout(()=>{ const b=document.getElementById('scrollBody'); if(b) b.scrollTop=7*ALTURA; },0);
+
+  function abrir(id){ document.getElementById(id).classList.remove('hidden'); }
+  function fechar(id){ document.getElementById(id).classList.add('hidden'); }
+  function abrirForm(){ abrir('form'); }
+
+  document.getElementById('switcher').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    [...document.querySelectorAll('#switcher button')].forEach(x=>{ x.className='px-3 py-1 rounded-md text-[12.5px] text-zinc-400 hover:text-zinc-200'; });
+    b.className='px-3 py-1 rounded-md text-[12.5px] bg-accent text-white';
+    const v=b.dataset.v;
+    document.getElementById('vistaSemana').classList.toggle('hidden', v==='mes');
+    document.getElementById('vistaMes').classList.toggle('hidden', v!=='mes');
+    document.getElementById('periodo').textContent = v==='mes'?'Junho 2025':v==='dia'?'Terça, 10 jun':'9–15 Junho';
+    if(v!=='mes') setTimeout(()=>{ const bd=document.getElementById('scrollBody'); if(bd) bd.scrollTop=7*ALTURA; },0);
+  });
+</script>
+</body>
+</html>

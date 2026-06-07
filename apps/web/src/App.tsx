@@ -7,6 +7,7 @@ import { Clientes } from '@/screens/Clientes';
 import { ClienteCard } from '@/screens/ClienteCard';
 import { Pessoas } from '@/screens/Pessoas';
 import { Kanban } from '@/screens/Kanban';
+import { Comunicacao } from '@/screens/Comunicacao';
 import { EmBreve } from '@/screens/EmBreve';
 
 function Protegido() {
@@ -30,7 +31,7 @@ export const router = createBrowserRouter([
       { path: 'clientes/:id', element: <ClienteCard /> },
       { path: 'pessoas', element: <Pessoas /> },
       { path: 'kanban/:donoId?', element: <Kanban /> },
-      { path: 'comunicacao', element: <EmBreve titulo="Comunicação · Mural" /> },
+      { path: 'comunicacao', element: <Comunicacao /> },
       { path: 'agenda', element: <EmBreve titulo="Agenda" /> },
       { path: 'indicadores', element: <EmBreve titulo="Indicadores" /> },
       { path: 'tv', element: <EmBreve titulo="TV-Dashboard" /> },

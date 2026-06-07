@@ -29,3 +29,6 @@ coverage/
 
 # Vite
 apps/web/dist/
+
+# playwright mcp artifacts
+.playwright-mcp/

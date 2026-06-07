@@ -19,7 +19,7 @@ import { NotificacoesModule } from './notificacoes';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../../.env', '.env'] }),
     EventEmitterModule.forRoot(), // event bus in-process — fronteira entre módulos
     BullModule.forRoot({
       connection: {

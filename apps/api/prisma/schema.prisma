@@ -24,8 +24,8 @@ enum EstagioEntrega {
   ONBOARDING
   EM_EXECUCAO
   EM_REVISAO
-  SAUDAVEL
-  EM_RISCO
+  ATIVO
+  ENCERRADO
 }
 
 enum SaudeCliente {
@@ -82,6 +82,8 @@ enum TipoAtividade {
   EVENTO
   KPI
   ESTAGIO_CLIENTE
+  SAUDE_CLIENTE
+  CLIENTE
   PROJETO
 }
 

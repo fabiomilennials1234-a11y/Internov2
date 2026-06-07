@@ -3,13 +3,14 @@
 // contratos + a facade pública — nunca repositórios/entities internos.
 // (Galego: comunicação intra-monolito é chamada de função, não rede.)
 
-import { TipoMencao, EstagioEntrega, TipoAtividade, StatusParticipante } from './dominio';
+import { TipoMencao, EstagioEntrega, SaudeCliente, TipoAtividade, StatusParticipante } from './dominio';
 
 export const EVENTOS = {
   USUARIO_CRIADO: 'pessoas.usuario.criado',
   AREA_CRIADA: 'pessoas.area.criada',
   CLIENTE_CRIADO: 'clientes.cliente.criado',
   CLIENTE_ESTAGIO_ALTERADO: 'clientes.estagio.alterado',
+  CLIENTE_SAUDE_ALTERADA: 'clientes.saude.alterada',
   MENCAO_CRIADA: 'comunicacao.mencao.criada',
   MENSAGEM_CRIADA: 'comunicacao.mensagem.criada',
   TAREFA_ATRIBUIDA: 'projetos.tarefa.atribuida',
@@ -30,6 +31,12 @@ export interface UsuarioCriadoEvento {
 export interface ClienteEstagioAlteradoEvento {
   clienteId: string;
   estagio: EstagioEntrega;
+  atorId: string;
+}
+
+export interface ClienteSaudeAlteradaEvento {
+  clienteId: string;
+  saude: SaudeCliente;
   atorId: string;
 }
 

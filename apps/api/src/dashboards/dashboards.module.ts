@@ -1,5 +1,5 @@
 import { Controller, Get, Injectable, Module, UseGuards } from '@nestjs/common';
-import { EstagioEntrega } from '@interno/shared';
+import { SaudeCliente } from '@interno/shared';
 import { PrismaService } from '../prisma';
 import { JwtAuthGuard } from '../auth';
 
@@ -11,7 +11,7 @@ export class DashboardsService {
   async resumoTv() {
     const [clientesAtivos, emRisco] = await Promise.all([
       this.prisma.cliente.count(),
-      this.prisma.cliente.count({ where: { estagioEntrega: EstagioEntrega.EM_RISCO } }),
+      this.prisma.cliente.count({ where: { saude: SaudeCliente.RISCO } }),
     ]);
     return { clientesAtivos, emRisco };
   }

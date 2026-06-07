@@ -4,12 +4,14 @@ import {
   EVENTOS,
   MencaoCriadaEvento,
   ClienteEstagioAlteradoEvento,
+  ClienteSaudeAlteradaEvento,
   TarefaAtribuidaEvento,
   EventoCriadoEvento,
   TipoAtividade,
   TipoMencao,
 } from '@interno/shared';
 import { AtividadesService } from './atividades.service';
+import { descreverAtividade } from './descritor-atividade';
 
 // Traduz eventos de domínio em itens do feed. Desacopla: o módulo de origem
 // não conhece atividades; só emite o evento.
@@ -32,13 +34,14 @@ export class AtividadesListener {
 
   @OnEvent(EVENTOS.CLIENTE_ESTAGIO_ALTERADO)
   aoMudarEstagio(e: ClienteEstagioAlteradoEvento) {
-    return this.atividades.registrar({
-      tipo: TipoAtividade.ESTAGIO_CLIENTE,
-      atorId: e.atorId,
-      clienteId: e.clienteId,
-      resumo: `Estágio de entrega → ${e.estagio}`,
-      payload: { estagio: e.estagio },
-    });
+    const item = descreverAtividade(EVENTOS.CLIENTE_ESTAGIO_ALTERADO, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.CLIENTE_SAUDE_ALTERADA)
+  aoMudarSaude(e: ClienteSaudeAlteradaEvento) {
+    const item = descreverAtividade(EVENTOS.CLIENTE_SAUDE_ALTERADA, e);
+    if (item) return this.atividades.registrar(item);
   }
 
   // Evento de agenda vinculado a cliente vira histórico no card (ator=criador, alvo=cliente).

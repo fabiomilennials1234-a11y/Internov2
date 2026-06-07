@@ -37,9 +37,9 @@ async function main() {
 
   const clientes = [
     { nome: 'Clínica Vitalis', emoji: '🏥', estagioEntrega: 'EM_EXECUCAO' as const, valorMensal: 1800000 },
-    { nome: 'Loja Norte', emoji: '🛍️', estagioEntrega: 'SAUDAVEL' as const, valorMensal: 1200000 },
+    { nome: 'Loja Norte', emoji: '🛍️', estagioEntrega: 'ATIVO' as const, valorMensal: 1200000 },
     { nome: 'Studio Belle', emoji: '💇', estagioEntrega: 'ONBOARDING' as const, valorMensal: 900000 },
-    { nome: 'AgroVerde', emoji: '🌱', estagioEntrega: 'EM_RISCO' as const, saude: 'RISCO' as const, valorMensal: 2500000 },
+    { nome: 'AgroVerde', emoji: '🌱', estagioEntrega: 'EM_EXECUCAO' as const, saude: 'RISCO' as const, valorMensal: 2500000 },
   ];
   for (const c of clientes) {
     await prisma.cliente.create({ data: { ...c, responsavelId: marina?.id } });

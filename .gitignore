@@ -32,3 +32,8 @@ apps/web/dist/
 
 # playwright mcp artifacts
 .playwright-mcp/
+
+# shared: compilados vão p/ dist (não versionar artefatos em src)
+packages/shared/src/*.js
+packages/shared/src/*.d.ts
+packages/shared/src/*.map

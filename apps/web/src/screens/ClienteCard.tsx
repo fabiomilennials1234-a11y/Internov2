@@ -8,6 +8,7 @@ interface Card {
   nome: string;
   emoji?: string;
   estagioEntrega: string;
+  saude: string;
   responsavel?: { nome: string };
   projetos?: { id: string; nome: string; frente: string }[];
 }
@@ -21,9 +22,16 @@ interface Atividade {
   ator?: { nome: string; avatarCor?: string };
 }
 
-const ESTAGIOS = ['ONBOARDING', 'EM_EXECUCAO', 'EM_REVISAO', 'SAUDAVEL', 'EM_RISCO'];
+const ESTAGIOS = ['ONBOARDING', 'EM_EXECUCAO', 'EM_REVISAO', 'ATIVO', 'ENCERRADO'];
 const rotulo: Record<string, string> = {
-  ONBOARDING: 'Onboarding', EM_EXECUCAO: 'Em execução', EM_REVISAO: 'Em revisão', SAUDAVEL: 'Saudável', EM_RISCO: 'Em risco',
+  ONBOARDING: 'Onboarding', EM_EXECUCAO: 'Em execução', EM_REVISAO: 'Em revisão', ATIVO: 'Ativo', ENCERRADO: 'Encerrado',
+};
+const SAUDES = ['BOA', 'ATENCAO', 'RISCO'];
+const rotuloSaude: Record<string, string> = { BOA: 'Boa', ATENCAO: 'Atenção', RISCO: 'Risco' };
+const corSaude: Record<string, string> = {
+  BOA: 'text-emerald-300 border-emerald-500/40 bg-emerald-500/10',
+  ATENCAO: 'text-amber-300 border-amber-500/40 bg-amber-500/10',
+  RISCO: 'text-rose-300 border-rose-500/40 bg-rose-500/10',
 };
 
 export function ClienteCard() {
@@ -34,6 +42,12 @@ export function ClienteCard() {
 
   async function mudarEstagio(estagio: string) {
     await api(`/clientes/${id}/estagio`, { method: 'PATCH', body: JSON.stringify({ estagio }) });
+    qc.invalidateQueries({ queryKey: ['cliente', id] });
+    qc.invalidateQueries({ queryKey: ['cliente-feed', id] });
+  }
+
+  async function mudarSaude(saude: string) {
+    await api(`/clientes/${id}/saude`, { method: 'PATCH', body: JSON.stringify({ saude }) });
     qc.invalidateQueries({ queryKey: ['cliente', id] });
     qc.invalidateQueries({ queryKey: ['cliente-feed', id] });
   }
@@ -49,10 +63,22 @@ export function ClienteCard() {
           <h1 className="font-serif text-[28px] text-white leading-none">{card.nome}</h1>
           <div className="text-[13px] text-zinc-400 mt-1.5">Resp. {card.responsavel?.nome ?? '—'}</div>
         </div>
-        <select value={card.estagioEntrega} onChange={(e) => mudarEstagio(e.target.value)}
-          className="bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[13px] text-accent-soft">
-          {ESTAGIOS.map((s) => <option key={s} value={s}>{rotulo[s]}</option>)}
-        </select>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-600">Saúde</span>
+            <select value={card.saude} onChange={(e) => mudarSaude(e.target.value)}
+              className={`border rounded-lg px-3 py-1.5 text-[13px] ${corSaude[card.saude] ?? 'text-zinc-300 border-white/[0.07] bg-ink-800'}`}>
+              {SAUDES.map((s) => <option key={s} value={s} className="bg-ink-800 text-zinc-200">{rotuloSaude[s]}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-600">Estágio</span>
+            <select value={card.estagioEntrega} onChange={(e) => mudarEstagio(e.target.value)}
+              className="bg-ink-800 border border-white/[0.07] rounded-lg px-3 py-1.5 text-[13px] text-accent-soft">
+              {ESTAGIOS.map((s) => <option key={s} value={s}>{rotulo[s]}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-12 gap-5 mt-7">

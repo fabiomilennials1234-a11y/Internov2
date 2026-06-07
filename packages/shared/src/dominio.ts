@@ -11,16 +11,18 @@ export const Papel = {
 } as const;
 export type Papel = (typeof Papel)[keyof typeof Papel];
 
-// Estágio de ENTREGA do cliente (pós-venda, "da porta p/ dentro").
+// Estágio de ENTREGA = FASE pura do ciclo (pós-venda). Risco mora em SaudeCliente
+// (eixo independente). Eixos separados — ver docs/adr/0002.
 export const EstagioEntrega = {
   ONBOARDING: 'ONBOARDING',
   EM_EXECUCAO: 'EM_EXECUCAO',
   EM_REVISAO: 'EM_REVISAO',
-  SAUDAVEL: 'SAUDAVEL',
-  EM_RISCO: 'EM_RISCO',
+  ATIVO: 'ATIVO',
+  ENCERRADO: 'ENCERRADO',
 } as const;
 export type EstagioEntrega = (typeof EstagioEntrega)[keyof typeof EstagioEntrega];
 
+// Saúde = SEMÁFORO de risco do cliente. Único eixo de risco. Ver docs/adr/0002.
 export const SaudeCliente = {
   BOA: 'BOA',
   ATENCAO: 'ATENCAO',
@@ -85,6 +87,8 @@ export const TipoAtividade = {
   EVENTO: 'EVENTO',
   KPI: 'KPI',
   ESTAGIO_CLIENTE: 'ESTAGIO_CLIENTE',
+  SAUDE_CLIENTE: 'SAUDE_CLIENTE',
+  CLIENTE: 'CLIENTE',
   PROJETO: 'PROJETO',
 } as const;
 export type TipoAtividade = (typeof TipoAtividade)[keyof typeof TipoAtividade];

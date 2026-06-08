@@ -9,6 +9,7 @@ export const EVENTOS = {
   USUARIO_CRIADO: 'pessoas.usuario.criado',
   AREA_CRIADA: 'pessoas.area.criada',
   CLIENTE_CRIADO: 'clientes.cliente.criado',
+  CLIENTE_ATUALIZADO: 'clientes.cliente.atualizado',
   CLIENTE_ESTAGIO_ALTERADO: 'clientes.estagio.alterado',
   CLIENTE_SAUDE_ALTERADA: 'clientes.saude.alterada',
   MENCAO_CRIADA: 'comunicacao.mencao.criada',
@@ -38,6 +39,18 @@ export interface ClienteSaudeAlteradaEvento {
   clienteId: string;
   saude: SaudeCliente;
   atorId: string;
+}
+
+export interface ClienteCriadoEvento {
+  clienteId: string;
+  nome: string;
+  atorId?: string | null;
+}
+
+export interface ClienteAtualizadoEvento {
+  clienteId: string;
+  atorId?: string | null;
+  campos: string[]; // nomes dos campos alterados, p/ resumo legível
 }
 
 // Gancho central do "card universal": menção a @cliente alimenta o card.

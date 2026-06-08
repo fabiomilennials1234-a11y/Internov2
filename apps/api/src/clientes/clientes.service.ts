@@ -6,6 +6,8 @@ import {
   SaudeCliente,
   ClienteEstagioAlteradoEvento,
   ClienteSaudeAlteradaEvento,
+  ClienteCriadoEvento,
+  ClienteAtualizadoEvento,
 } from '@interno/shared';
 import { PrismaService } from '../prisma';
 
@@ -39,8 +41,36 @@ export class ClientesService {
     return cliente;
   }
 
-  criar(data: { nome: string; emoji?: string; responsavelId?: string; valorMensal?: number }) {
-    return this.prisma.cliente.create({ data });
+  async criar(
+    data: { nome: string; emoji?: string; contato?: string; responsavelId?: string; valorMensal?: number },
+    atorId?: string,
+  ) {
+    const cliente = await this.prisma.cliente.create({ data });
+    this.eventos.emit(EVENTOS.CLIENTE_CRIADO, {
+      clienteId: cliente.id,
+      nome: cliente.nome,
+      atorId,
+    } satisfies ClienteCriadoEvento);
+    return cliente;
+  }
+
+  // Edita dados gerais; emite CLIENTE_ATUALIZADO só com os campos que mudaram.
+  async editar(
+    id: string,
+    data: { nome?: string; emoji?: string; contato?: string; responsavelId?: string; valorMensal?: number },
+    atorId?: string,
+  ) {
+    const antes = await this.prisma.cliente.findUniqueOrThrow({ where: { id } });
+    const cliente = await this.prisma.cliente.update({ where: { id }, data });
+    const campos = (Object.keys(data) as (keyof typeof data)[]).filter(
+      (k) => data[k] !== undefined && (antes as Record<string, unknown>)[k] !== cliente[k],
+    );
+    this.eventos.emit(EVENTOS.CLIENTE_ATUALIZADO, {
+      clienteId: id,
+      atorId,
+      campos: campos as string[],
+    } satisfies ClienteAtualizadoEvento);
+    return cliente;
   }
 
   async mudarEstagio(id: string, estagio: EstagioEntrega, atorId: string) {

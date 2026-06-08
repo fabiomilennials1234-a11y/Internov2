@@ -32,6 +32,42 @@ describe('descreverAtividade', () => {
     });
   });
 
+  it('descreve criação do Cliente', () => {
+    const item = descreverAtividade(EVENTOS.CLIENTE_CRIADO, {
+      clienteId: 'c1',
+      nome: 'AgroVerde',
+      atorId: 'u1',
+    });
+    expect(item).toEqual({
+      tipo: TipoAtividade.CLIENTE,
+      atorId: 'u1',
+      clienteId: 'c1',
+      resumo: 'Cliente criado',
+      payload: undefined,
+    });
+  });
+
+  it('descreve edição do Cliente listando os campos alterados', () => {
+    const item = descreverAtividade(EVENTOS.CLIENTE_ATUALIZADO, {
+      clienteId: 'c1',
+      atorId: 'u1',
+      campos: ['nome', 'valorMensal'],
+    });
+    expect(item).toEqual({
+      tipo: TipoAtividade.CLIENTE,
+      atorId: 'u1',
+      clienteId: 'c1',
+      resumo: 'Dados atualizados: nome, valorMensal',
+      payload: { campos: ['nome', 'valorMensal'] },
+    });
+  });
+
+  it('ignora edição sem campos alterados', () => {
+    expect(
+      descreverAtividade(EVENTOS.CLIENTE_ATUALIZADO, { clienteId: 'c1', atorId: 'u1', campos: [] }),
+    ).toBeNull();
+  });
+
   it('ignora evento que não entra no card', () => {
     expect(descreverAtividade('evento.qualquer', {})).toBeNull();
   });

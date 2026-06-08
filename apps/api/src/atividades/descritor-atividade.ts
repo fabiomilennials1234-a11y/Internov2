@@ -4,6 +4,8 @@ import {
   AtividadeFeedItem,
   ClienteSaudeAlteradaEvento,
   ClienteEstagioAlteradoEvento,
+  ClienteCriadoEvento,
+  ClienteAtualizadoEvento,
 } from '@interno/shared';
 
 const ROTULO_SAUDE: Record<string, string> = { BOA: 'Boa', ATENCAO: 'Atenção', RISCO: 'Risco' };
@@ -37,6 +39,27 @@ export function descreverAtividade(nome: string, e: unknown): AtividadeFeedItem 
         clienteId: ev.clienteId,
         resumo: `Estágio → ${ROTULO_ESTAGIO[ev.estagio] ?? ev.estagio}`,
         payload: { estagio: ev.estagio },
+      };
+    }
+    case EVENTOS.CLIENTE_CRIADO: {
+      const ev = e as ClienteCriadoEvento;
+      return {
+        tipo: TipoAtividade.CLIENTE,
+        atorId: ev.atorId,
+        clienteId: ev.clienteId,
+        resumo: 'Cliente criado',
+        payload: undefined,
+      };
+    }
+    case EVENTOS.CLIENTE_ATUALIZADO: {
+      const ev = e as ClienteAtualizadoEvento;
+      if (!ev.campos.length) return null; // nada mudou → não polui o feed
+      return {
+        tipo: TipoAtividade.CLIENTE,
+        atorId: ev.atorId,
+        clienteId: ev.clienteId,
+        resumo: `Dados atualizados: ${ev.campos.join(', ')}`,
+        payload: { campos: ev.campos },
       };
     }
     default:

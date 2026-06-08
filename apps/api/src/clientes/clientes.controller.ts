@@ -8,6 +8,15 @@ import type { UsuarioAutenticado } from '../auth';
 class CriarClienteDto {
   @IsString() nome!: string;
   @IsOptional() @IsString() emoji?: string;
+  @IsOptional() @IsString() contato?: string;
+  @IsOptional() @IsString() responsavelId?: string;
+  @IsOptional() @IsInt() valorMensal?: number;
+}
+
+class EditarClienteDto {
+  @IsOptional() @IsString() nome?: string;
+  @IsOptional() @IsString() emoji?: string;
+  @IsOptional() @IsString() contato?: string;
   @IsOptional() @IsString() responsavelId?: string;
   @IsOptional() @IsInt() valorMensal?: number;
 }
@@ -36,8 +45,13 @@ export class ClientesController {
   }
 
   @Post()
-  criar(@Body() dto: CriarClienteDto) {
-    return this.clientes.criar(dto);
+  criar(@Body() dto: CriarClienteDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.clientes.criar(dto, u.id);
+  }
+
+  @Patch(':id')
+  editar(@Param('id') id: string, @Body() dto: EditarClienteDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.clientes.editar(id, dto, u.id);
   }
 
   @Patch(':id/estagio')

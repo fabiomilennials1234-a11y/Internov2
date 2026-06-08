@@ -5,6 +5,8 @@ import {
   MencaoCriadaEvento,
   ClienteEstagioAlteradoEvento,
   ClienteSaudeAlteradaEvento,
+  ClienteCriadoEvento,
+  ClienteAtualizadoEvento,
   TarefaAtribuidaEvento,
   EventoCriadoEvento,
   TipoAtividade,
@@ -41,6 +43,18 @@ export class AtividadesListener {
   @OnEvent(EVENTOS.CLIENTE_SAUDE_ALTERADA)
   aoMudarSaude(e: ClienteSaudeAlteradaEvento) {
     const item = descreverAtividade(EVENTOS.CLIENTE_SAUDE_ALTERADA, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.CLIENTE_CRIADO)
+  aoCriarCliente(e: ClienteCriadoEvento) {
+    const item = descreverAtividade(EVENTOS.CLIENTE_CRIADO, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.CLIENTE_ATUALIZADO)
+  aoEditarCliente(e: ClienteAtualizadoEvento) {
+    const item = descreverAtividade(EVENTOS.CLIENTE_ATUALIZADO, e);
     if (item) return this.atividades.registrar(item);
   }
 

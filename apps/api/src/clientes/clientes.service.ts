@@ -18,8 +18,10 @@ export class ClientesService {
     private readonly eventos: EventEmitter2,
   ) {}
 
-  listar() {
+  // Esconde clientes ENCERRADOS por default (nunca apaga; estado terminal).
+  listar(incluirEncerrados = false) {
     return this.prisma.cliente.findMany({
+      where: incluirEncerrados ? undefined : { estagioEntrega: { not: 'ENCERRADO' } },
       include: {
         responsavel: { select: { id: true, nome: true, avatarCor: true } },
         projetos: { select: { id: true, frente: true } },

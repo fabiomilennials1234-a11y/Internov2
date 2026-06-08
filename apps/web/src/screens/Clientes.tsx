@@ -26,7 +26,11 @@ const corSaude: Record<string, string> = {
 export function Clientes() {
   const qc = useQueryClient();
   const [novo, setNovo] = useState(false);
-  const { data, isLoading } = useQuery({ queryKey: ['clientes'], queryFn: () => api<Cliente[]>('/clientes') });
+  const [verEncerrados, setVerEncerrados] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: ['clientes', { verEncerrados }],
+    queryFn: () => api<Cliente[]>(`/clientes${verEncerrados ? '?incluirEncerrados=true' : ''}`),
+  });
 
   return (
     <div className="max-w-[1180px] mx-auto px-8 py-7">
@@ -35,9 +39,15 @@ export function Clientes() {
           <h1 className="font-serif text-[28px] text-white">Clientes</h1>
           <p className="text-[13px] text-zinc-400 mt-1.5 mb-6">Card universal · gestão da entrega (pós-venda)</p>
         </div>
-        <button onClick={() => setNovo(true)} className="bg-accent hover:bg-accent-deep text-white rounded-lg px-3.5 py-2 text-[13px] font-medium">
-          + Novo cliente
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-[12px] text-zinc-500 cursor-pointer select-none">
+            <input type="checkbox" checked={verEncerrados} onChange={(e) => setVerEncerrados(e.target.checked)} className="accent-accent" />
+            Mostrar encerrados
+          </label>
+          <button onClick={() => setNovo(true)} className="bg-accent hover:bg-accent-deep text-white rounded-lg px-3.5 py-2 text-[13px] font-medium">
+            + Novo cliente
+          </button>
+        </div>
       </div>
       <div className="rounded-2xl border border-white/[0.07] bg-ink-850/60 overflow-hidden">
         <div className="grid grid-cols-12 px-4 py-2.5 text-[11px] uppercase tracking-wider text-zinc-500 border-b border-white/[0.07]">

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { EstagioEntrega, SaudeCliente } from '@interno/shared';
 import { ClientesService } from './clientes.service';
@@ -35,8 +35,8 @@ export class ClientesController {
   constructor(private readonly clientes: ClientesService) {}
 
   @Get()
-  listar() {
-    return this.clientes.listar();
+  listar(@Query('incluirEncerrados') incluirEncerrados?: string) {
+    return this.clientes.listar(incluirEncerrados === 'true');
   }
 
   @Get(':id')

@@ -4,12 +4,18 @@ import {
   EVENTOS,
   MencaoCriadaEvento,
   ClienteEstagioAlteradoEvento,
+  ClienteSaudeAlteradaEvento,
+  ClienteCriadoEvento,
+  ClienteAtualizadoEvento,
+  ProjetoVinculadoClienteEvento,
+  FrenteStatusAlteradoEvento,
   TarefaAtribuidaEvento,
   EventoCriadoEvento,
   TipoAtividade,
   TipoMencao,
 } from '@interno/shared';
 import { AtividadesService } from './atividades.service';
+import { descreverAtividade } from './descritor-atividade';
 
 // Traduz eventos de domínio em itens do feed. Desacopla: o módulo de origem
 // não conhece atividades; só emite o evento.
@@ -32,13 +38,38 @@ export class AtividadesListener {
 
   @OnEvent(EVENTOS.CLIENTE_ESTAGIO_ALTERADO)
   aoMudarEstagio(e: ClienteEstagioAlteradoEvento) {
-    return this.atividades.registrar({
-      tipo: TipoAtividade.ESTAGIO_CLIENTE,
-      atorId: e.atorId,
-      clienteId: e.clienteId,
-      resumo: `Estágio de entrega → ${e.estagio}`,
-      payload: { estagio: e.estagio },
-    });
+    const item = descreverAtividade(EVENTOS.CLIENTE_ESTAGIO_ALTERADO, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.CLIENTE_SAUDE_ALTERADA)
+  aoMudarSaude(e: ClienteSaudeAlteradaEvento) {
+    const item = descreverAtividade(EVENTOS.CLIENTE_SAUDE_ALTERADA, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.CLIENTE_CRIADO)
+  aoCriarCliente(e: ClienteCriadoEvento) {
+    const item = descreverAtividade(EVENTOS.CLIENTE_CRIADO, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.CLIENTE_ATUALIZADO)
+  aoEditarCliente(e: ClienteAtualizadoEvento) {
+    const item = descreverAtividade(EVENTOS.CLIENTE_ATUALIZADO, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.PROJETO_VINCULADO_CLIENTE)
+  aoCriarFrente(e: ProjetoVinculadoClienteEvento) {
+    const item = descreverAtividade(EVENTOS.PROJETO_VINCULADO_CLIENTE, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.FRENTE_STATUS_ALTERADO)
+  aoMudarStatusFrente(e: FrenteStatusAlteradoEvento) {
+    const item = descreverAtividade(EVENTOS.FRENTE_STATUS_ALTERADO, e);
+    if (item) return this.atividades.registrar(item);
   }
 
   // Evento de agenda vinculado a cliente vira histórico no card (ator=criador, alvo=cliente).

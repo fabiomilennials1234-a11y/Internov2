@@ -24,8 +24,8 @@ enum EstagioEntrega {
   ONBOARDING
   EM_EXECUCAO
   EM_REVISAO
-  SAUDAVEL
-  EM_RISCO
+  ATIVO
+  ENCERRADO
 }
 
 enum SaudeCliente {
@@ -44,6 +44,13 @@ enum TipoFrente {
   CRM
   VENDAS
   OUTRO
+}
+
+enum StatusFrente {
+  PLANEJADA
+  ATIVA
+  PAUSADA
+  CONCLUIDA
 }
 
 enum TipoCanal {
@@ -82,6 +89,8 @@ enum TipoAtividade {
   EVENTO
   KPI
   ESTAGIO_CLIENTE
+  SAUDE_CLIENTE
+  CLIENTE
   PROJETO
 }
 
@@ -121,6 +130,7 @@ model Usuario {
   areasGeridas    Area[]   @relation("GestorDaArea")
 
   clientesResp    Cliente[] @relation("ResponsavelCliente")
+  frentesResp     Projeto[] @relation("ResponsavelFrente")
   boards          Board[]
   tarefas         Tarefa[]
   mensagens       Mensagem[]
@@ -191,18 +201,22 @@ model Cliente {
 // ───────────────────────── [projetos] frentes + boards (kanban por diretor) ─────────────────────────
 // Frente do cliente = Projeto (Marketing/CRM/Vendas) vinculado ao Cliente.
 model Projeto {
-  id          String      @id @default(cuid())
-  nome        String
-  tipo        TipoProjeto @default(CLIENTE)
-  frente      TipoFrente  @default(OUTRO)
-  clienteId   String?
-  cliente     Cliente?    @relation(fields: [clienteId], references: [id])
-  criadoEm    DateTime    @default(now())
+  id            String       @id @default(cuid())
+  nome          String
+  tipo          TipoProjeto  @default(CLIENTE)
+  frente        TipoFrente   @default(OUTRO)
+  status        StatusFrente @default(ATIVA)
+  clienteId     String?
+  cliente       Cliente?     @relation(fields: [clienteId], references: [id])
+  responsavelId String?
+  responsavel   Usuario?     @relation("ResponsavelFrente", fields: [responsavelId], references: [id])
+  criadoEm      DateTime     @default(now())
 
-  tarefas     Tarefa[]
-  atividades  Atividade[]
+  tarefas       Tarefa[]
+  atividades    Atividade[]
 
   @@index([clienteId])
+  @@index([responsavelId])
 }
 
 // Kanban POR DIRETOR: board tem dono (Usuario) e colunas custom ordenáveis.

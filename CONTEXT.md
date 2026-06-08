@@ -4,6 +4,32 @@ Monolito modular para a diretoria acompanhar o que cada pessoa faz e gerir clien
 
 ## Linguagem
 
+### Clientes
+
+**Cliente**:
+O agregado central do pós-venda — uma empresa atendida pela MilennialsTECH. É o "card universal": tudo que acontece (menções, eventos, mudanças) converge para a timeline dele. No código: `Cliente`.
+_Avoid_: Conta, lead (lead é pré-venda; Cliente é pós-venda), empresa.
+
+**Estágio de entrega**:
+A **fase** do cliente no ciclo de vida da entrega — eixo puramente operacional, sem juízo de risco. No código: `Cliente.estagioEntrega`. Não confundir com **Saúde**: um cliente em Onboarding pode estar com saúde Boa ou em Risco.
+_Avoid_: Status, situação (status mistura fase com risco — é exatamente o que separamos).
+
+**Saúde**:
+O **semáforo** de risco do cliente (Boa / Atenção / Risco) — eixo independente do **Estágio de entrega**. É o sinal que o diretor bate o olho pra saber onde agir. No código: `Cliente.saude`.
+_Avoid_: Status, risco (Risco é só um dos valores da Saúde).
+
+**Frente**:
+Uma linha de trabalho que a MilennialsTECH toca para um **Cliente**, de um **Tipo de frente** (Marketing / CRM / Vendas / Outro), com **Responsável** e **Status** próprios. Contém **Tarefas**. No código: `Projeto` com `tipo=CLIENTE` e `clienteId` preenchido.
+_Avoid_: Projeto (Projeto é o termo de código e abrange também projetos INTERNOS, que **não** são Frentes), workstream, área.
+
+**Status da frente**:
+O estado de uma **Frente**: Planejada → Ativa → Pausada → Concluída. Independente do **Estágio de entrega** do Cliente. No código: `Projeto.status`.
+_Avoid_: Fase, etapa.
+
+**Responsável**:
+O **Usuário** dono de um **Cliente** (responsável geral pelo pós-venda) ou de uma **Frente** (quem toca aquela linha). Dois níveis distintos.
+_Avoid_: Dono (Dono é do Board no Kanban — eixo separado), gestor (Gestor é hierarquia de organograma).
+
 ### Agenda
 
 **Agenda**:

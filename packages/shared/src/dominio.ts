@@ -45,6 +45,15 @@ export const TipoFrente = {
 } as const;
 export type TipoFrente = (typeof TipoFrente)[keyof typeof TipoFrente];
 
+// Status próprio da Frente (independe do Estágio do Cliente). Ver CONTEXT.md.
+export const StatusFrente = {
+  PLANEJADA: 'PLANEJADA',
+  ATIVA: 'ATIVA',
+  PAUSADA: 'PAUSADA',
+  CONCLUIDA: 'CONCLUIDA',
+} as const;
+export type StatusFrente = (typeof StatusFrente)[keyof typeof StatusFrente];
+
 export const TipoCanal = {
   MURAL: 'MURAL',
   CANAL: 'CANAL',

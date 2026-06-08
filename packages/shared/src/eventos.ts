@@ -3,7 +3,7 @@
 // contratos + a facade pública — nunca repositórios/entities internos.
 // (Galego: comunicação intra-monolito é chamada de função, não rede.)
 
-import { TipoMencao, EstagioEntrega, SaudeCliente, TipoAtividade, StatusParticipante } from './dominio';
+import { TipoMencao, EstagioEntrega, SaudeCliente, TipoFrente, StatusFrente, TipoAtividade, StatusParticipante } from './dominio';
 
 export const EVENTOS = {
   USUARIO_CRIADO: 'pessoas.usuario.criado',
@@ -16,6 +16,7 @@ export const EVENTOS = {
   MENSAGEM_CRIADA: 'comunicacao.mensagem.criada',
   TAREFA_ATRIBUIDA: 'projetos.tarefa.atribuida',
   PROJETO_VINCULADO_CLIENTE: 'projetos.projeto.vinculadoCliente',
+  FRENTE_STATUS_ALTERADO: 'projetos.frente.statusAlterado',
   EVENTO_CRIADO: 'agenda.evento.criado',
   LEMBRETE_DISPARADO: 'agenda.lembrete.disparado',
   RSVP_RESPONDIDO: 'agenda.rsvp.respondido',
@@ -62,6 +63,23 @@ export interface MencaoCriadaEvento {
   canalId: string;
   autorId: string;
   trecho: string;
+}
+
+// Frente (Projeto vinculado a Cliente) criada → entra no card do cliente.
+export interface ProjetoVinculadoClienteEvento {
+  projetoId: string;
+  clienteId: string;
+  nome: string;
+  frente: TipoFrente;
+  atorId?: string | null;
+}
+
+export interface FrenteStatusAlteradoEvento {
+  projetoId: string;
+  clienteId: string;
+  nome: string;
+  status: StatusFrente;
+  atorId?: string | null;
 }
 
 export interface TarefaAtribuidaEvento {

@@ -7,6 +7,8 @@ import {
   ClienteSaudeAlteradaEvento,
   ClienteCriadoEvento,
   ClienteAtualizadoEvento,
+  ProjetoVinculadoClienteEvento,
+  FrenteStatusAlteradoEvento,
   TarefaAtribuidaEvento,
   EventoCriadoEvento,
   TipoAtividade,
@@ -55,6 +57,18 @@ export class AtividadesListener {
   @OnEvent(EVENTOS.CLIENTE_ATUALIZADO)
   aoEditarCliente(e: ClienteAtualizadoEvento) {
     const item = descreverAtividade(EVENTOS.CLIENTE_ATUALIZADO, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.PROJETO_VINCULADO_CLIENTE)
+  aoCriarFrente(e: ProjetoVinculadoClienteEvento) {
+    const item = descreverAtividade(EVENTOS.PROJETO_VINCULADO_CLIENTE, e);
+    if (item) return this.atividades.registrar(item);
+  }
+
+  @OnEvent(EVENTOS.FRENTE_STATUS_ALTERADO)
+  aoMudarStatusFrente(e: FrenteStatusAlteradoEvento) {
+    const item = descreverAtividade(EVENTOS.FRENTE_STATUS_ALTERADO, e);
     if (item) return this.atividades.registrar(item);
   }
 

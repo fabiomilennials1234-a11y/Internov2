@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { IsArray, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { TipoFrente, StatusFrente } from '@interno/shared';
 import { ProjetosService } from './projetos.service';
-import { JwtAuthGuard } from '../auth';
+import { JwtAuthGuard, UsuarioAtual } from '../auth';
+import type { UsuarioAutenticado } from '../auth';
 
 class CriarBoardDto {
   @IsString() donoId!: string;
@@ -22,6 +24,19 @@ class MoverDto {
   @IsInt() ordem!: number;
 }
 
+class CriarFrenteDto {
+  @IsString() clienteId!: string;
+  @IsString() nome!: string;
+  @IsEnum(TipoFrente) frente!: TipoFrente;
+  @IsOptional() @IsString() responsavelId?: string;
+}
+
+class AtualizarFrenteDto {
+  @IsOptional() @IsString() nome?: string;
+  @IsOptional() @IsString() responsavelId?: string;
+  @IsOptional() @IsEnum(StatusFrente) status?: StatusFrente;
+}
+
 @UseGuards(JwtAuthGuard)
 @Controller('projetos')
 export class ProjetosController {
@@ -40,6 +55,16 @@ export class ProjetosController {
   @Post('tarefas')
   criarTarefa(@Body() dto: CriarTarefaDto) {
     return this.projetos.criarTarefa(dto);
+  }
+
+  @Post('frentes')
+  criarFrente(@Body() dto: CriarFrenteDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.projetos.criarFrente(dto, u.id);
+  }
+
+  @Patch('frentes/:id')
+  atualizarFrente(@Param('id') id: string, @Body() dto: AtualizarFrenteDto, @UsuarioAtual() u: UsuarioAutenticado) {
+    return this.projetos.atualizarFrente(id, dto, u.id);
   }
 
   @Patch('tarefas/:id/mover')

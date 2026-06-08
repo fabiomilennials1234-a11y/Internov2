@@ -12,9 +12,21 @@ interface Card {
   contato?: string;
   valorMensal?: number;
   responsavel?: { id: string; nome: string };
-  projetos?: { id: string; nome: string; frente: string }[];
+  projetos?: Frente[];
 }
+interface Frente { id: string; nome: string; frente: string; status: string; responsavel?: { id: string; nome: string } }
 interface Usuario { id: string; nome: string }
+
+// Espelha a máquina de estados de apps/api/src/projetos/status-frente.ts (fonte da verdade).
+const PROX_STATUS: Record<string, string[]> = {
+  PLANEJADA: ['ATIVA'], ATIVA: ['PAUSADA', 'CONCLUIDA'], PAUSADA: ['ATIVA', 'CONCLUIDA'], CONCLUIDA: ['ATIVA'],
+};
+const TIPOS_FRENTE = ['MARKETING', 'CRM', 'VENDAS', 'OUTRO'];
+const rotuloFrente: Record<string, string> = { MARKETING: 'Marketing', CRM: 'CRM', VENDAS: 'Vendas', OUTRO: 'Outro' };
+const rotuloStatusFrente: Record<string, string> = { PLANEJADA: 'Planejada', ATIVA: 'Ativa', PAUSADA: 'Pausada', CONCLUIDA: 'Concluída' };
+const corStatusFrente: Record<string, string> = {
+  PLANEJADA: 'text-sky-300', ATIVA: 'text-emerald-300', PAUSADA: 'text-amber-300', CONCLUIDA: 'text-zinc-400',
+};
 interface Atividade {
   id: string;
   tipo: string;
@@ -94,15 +106,8 @@ export function ClienteCard() {
 
       <div className="grid grid-cols-12 gap-5 mt-7">
         <div className="col-span-12 lg:col-span-4 space-y-4">
-          <div className="rounded-xl border border-white/[0.07] bg-ink-850/55 p-4">
-            <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-3">Frentes (projetos)</div>
-            <div className="space-y-2 text-[13px]">
-              {(card.projetos ?? []).map((p) => (
-                <div key={p.id} className="flex justify-between"><span className="text-zinc-300">{p.nome}</span><span className="text-[10.5px] px-2 py-0.5 rounded-full bg-white/[0.06] text-zinc-300">{p.frente}</span></div>
-              ))}
-              {(!card.projetos || card.projetos.length === 0) && <div className="text-zinc-600">Sem frentes ainda</div>}
-            </div>
-          </div>
+          <FrentesPanel clienteId={card.id} frentes={card.projetos ?? []}
+            onMudou={() => { qc.invalidateQueries({ queryKey: ['cliente', id] }); qc.invalidateQueries({ queryKey: ['cliente-feed', id] }); }} />
         </div>
         <div className="col-span-12 lg:col-span-8">
           <div className="text-[12px] uppercase tracking-wider text-zinc-500 mb-3">Timeline · atividades & menções</div>
@@ -181,6 +186,79 @@ function EditarClienteModal({ card, onClose, onSalvo }: { card: Card; onClose: (
             {salvando ? 'Salvando…' : 'Salvar'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function FrentesPanel({ clienteId, frentes, onMudou }: { clienteId: string; frentes: Frente[]; onMudou: () => void }) {
+  const [criando, setCriando] = useState(false);
+  const [nome, setNome] = useState('');
+  const [tipo, setTipo] = useState('MARKETING');
+  const [responsavelId, setResponsavelId] = useState('');
+  const { data: usuarios } = useQuery({ queryKey: ['usuarios'], queryFn: () => api<Usuario[]>('/pessoas/usuarios') });
+
+  async function criar() {
+    if (!nome.trim()) return;
+    await api('/projetos/frentes', {
+      method: 'POST',
+      body: JSON.stringify({ clienteId, nome: nome.trim(), frente: tipo, responsavelId: responsavelId || undefined }),
+    });
+    setNome(''); setTipo('MARKETING'); setResponsavelId(''); setCriando(false);
+    onMudou();
+  }
+
+  async function atualizar(id: string, dados: Record<string, string>) {
+    await api(`/projetos/frentes/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+    onMudou();
+  }
+
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-ink-850/55 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[11px] uppercase tracking-wider text-zinc-500">Frentes</div>
+        <button onClick={() => setCriando((v) => !v)} className="text-[11px] text-accent-soft hover:text-accent">+ Frente</button>
+      </div>
+
+      {criando && (
+        <div className="space-y-2 mb-3 pb-3 border-b border-white/[0.06]">
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da frente *" autoFocus
+            className="w-full bg-ink-800 border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12.5px] text-white outline-none focus:border-accent/50" />
+          <div className="flex gap-2">
+            <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="flex-1 bg-ink-800 border border-white/[0.08] rounded-lg px-2 py-1.5 text-[12px] text-zinc-300 outline-none">
+              {TIPOS_FRENTE.map((t) => <option key={t} value={t}>{rotuloFrente[t]}</option>)}
+            </select>
+            <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} className="flex-1 bg-ink-800 border border-white/[0.08] rounded-lg px-2 py-1.5 text-[12px] text-zinc-300 outline-none">
+              <option value="">Responsável</option>
+              {(usuarios ?? []).map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+            </select>
+          </div>
+          <button onClick={criar} disabled={!nome.trim()} className="w-full bg-accent hover:bg-accent-deep disabled:opacity-40 text-white rounded-lg py-1.5 text-[12px]">Adicionar</button>
+        </div>
+      )}
+
+      <div className="space-y-2.5 text-[13px]">
+        {frentes.map((f) => (
+          <div key={f.id} className="rounded-lg bg-white/[0.03] px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-zinc-200 truncate">{f.nome}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.06] text-zinc-400 shrink-0">{rotuloFrente[f.frente] ?? f.frente}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2 mt-1.5">
+              <select value={f.responsavel?.id ?? ''} onChange={(e) => atualizar(f.id, { responsavelId: e.target.value })}
+                className="bg-transparent text-[11.5px] text-zinc-400 outline-none -ml-0.5">
+                <option value="">sem responsável</option>
+                {(usuarios ?? []).map((u) => <option key={u.id} value={u.id} className="bg-ink-800">{u.nome}</option>)}
+              </select>
+              <select value={f.status} onChange={(e) => atualizar(f.id, { status: e.target.value })}
+                className={`bg-transparent text-[11px] font-medium outline-none text-right ${corStatusFrente[f.status] ?? 'text-zinc-400'}`}>
+                <option value={f.status} className="bg-ink-800">{rotuloStatusFrente[f.status] ?? f.status}</option>
+                {(PROX_STATUS[f.status] ?? []).map((s) => <option key={s} value={s} className="bg-ink-800">→ {rotuloStatusFrente[s]}</option>)}
+              </select>
+            </div>
+          </div>
+        ))}
+        {frentes.length === 0 && <div className="text-zinc-600">Sem frentes ainda</div>}
       </div>
     </div>
   );

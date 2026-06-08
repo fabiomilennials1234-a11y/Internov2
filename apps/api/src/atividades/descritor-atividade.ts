@@ -6,6 +6,8 @@ import {
   ClienteEstagioAlteradoEvento,
   ClienteCriadoEvento,
   ClienteAtualizadoEvento,
+  ProjetoVinculadoClienteEvento,
+  FrenteStatusAlteradoEvento,
 } from '@interno/shared';
 
 const ROTULO_SAUDE: Record<string, string> = { BOA: 'Boa', ATENCAO: 'Atenção', RISCO: 'Risco' };
@@ -15,6 +17,18 @@ const ROTULO_ESTAGIO: Record<string, string> = {
   EM_REVISAO: 'Em revisão',
   ATIVO: 'Ativo',
   ENCERRADO: 'Encerrado',
+};
+const ROTULO_FRENTE: Record<string, string> = {
+  MARKETING: 'Marketing',
+  CRM: 'CRM',
+  VENDAS: 'Vendas',
+  OUTRO: 'Outro',
+};
+const ROTULO_STATUS_FRENTE: Record<string, string> = {
+  PLANEJADA: 'Planejada',
+  ATIVA: 'Ativa',
+  PAUSADA: 'Pausada',
+  CONCLUIDA: 'Concluída',
 };
 
 // Deep module: traduz um evento de domínio no item do feed (ou null se não entra no card).
@@ -60,6 +74,28 @@ export function descreverAtividade(nome: string, e: unknown): AtividadeFeedItem 
         clienteId: ev.clienteId,
         resumo: `Dados atualizados: ${ev.campos.join(', ')}`,
         payload: { campos: ev.campos },
+      };
+    }
+    case EVENTOS.PROJETO_VINCULADO_CLIENTE: {
+      const ev = e as ProjetoVinculadoClienteEvento;
+      return {
+        tipo: TipoAtividade.PROJETO,
+        atorId: ev.atorId,
+        clienteId: ev.clienteId,
+        projetoId: ev.projetoId,
+        resumo: `Frente criada: ${ev.nome} (${ROTULO_FRENTE[ev.frente] ?? ev.frente})`,
+        payload: { frente: ev.frente },
+      };
+    }
+    case EVENTOS.FRENTE_STATUS_ALTERADO: {
+      const ev = e as FrenteStatusAlteradoEvento;
+      return {
+        tipo: TipoAtividade.PROJETO,
+        atorId: ev.atorId,
+        clienteId: ev.clienteId,
+        projetoId: ev.projetoId,
+        resumo: `Frente «${ev.nome}» → ${ROTULO_STATUS_FRENTE[ev.status] ?? ev.status}`,
+        payload: { status: ev.status },
       };
     }
     default:

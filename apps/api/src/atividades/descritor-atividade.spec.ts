@@ -68,6 +68,42 @@ describe('descreverAtividade', () => {
     ).toBeNull();
   });
 
+  it('descreve criação de Frente no card', () => {
+    const item = descreverAtividade(EVENTOS.PROJETO_VINCULADO_CLIENTE, {
+      projetoId: 'p1',
+      clienteId: 'c1',
+      nome: 'Tráfego pago',
+      frente: 'MARKETING',
+      atorId: 'u1',
+    });
+    expect(item).toEqual({
+      tipo: TipoAtividade.PROJETO,
+      atorId: 'u1',
+      clienteId: 'c1',
+      projetoId: 'p1',
+      resumo: 'Frente criada: Tráfego pago (Marketing)',
+      payload: { frente: 'MARKETING' },
+    });
+  });
+
+  it('descreve mudança de status da Frente', () => {
+    const item = descreverAtividade(EVENTOS.FRENTE_STATUS_ALTERADO, {
+      projetoId: 'p1',
+      clienteId: 'c1',
+      nome: 'Tráfego pago',
+      status: 'PAUSADA',
+      atorId: 'u1',
+    });
+    expect(item).toEqual({
+      tipo: TipoAtividade.PROJETO,
+      atorId: 'u1',
+      clienteId: 'c1',
+      projetoId: 'p1',
+      resumo: 'Frente «Tráfego pago» → Pausada',
+      payload: { status: 'PAUSADA' },
+    });
+  });
+
   it('ignora evento que não entra no card', () => {
     expect(descreverAtividade('evento.qualquer', {})).toBeNull();
   });

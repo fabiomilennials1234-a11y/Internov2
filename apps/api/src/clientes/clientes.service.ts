@@ -33,7 +33,10 @@ export class ClientesService {
       where: { id },
       include: {
         responsavel: { select: { id: true, nome: true, avatarCor: true } },
-        projetos: true,
+        projetos: {
+          orderBy: { criadoEm: 'asc' },
+          include: { responsavel: { select: { id: true, nome: true, avatarCor: true } } },
+        },
         eventos: { orderBy: { inicio: 'asc' }, take: 5 },
       },
     });
